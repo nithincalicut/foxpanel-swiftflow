@@ -118,7 +118,21 @@ export default function Board() {
     if (!over) return;
 
     const leadId = active.id as string;
-    const newStatus = over.id as LeadStatus;
+    
+    // Check if dropped on a column or another lead
+    let newStatus: LeadStatus;
+    const overIdStr = over.id as string;
+    
+    // If over.id is a valid status, use it directly
+    const validStatuses: LeadStatus[] = ["leads", "photos_received", "mockup_done", "price_shared", "payment_done", "production", "delivered"];
+    if (validStatuses.includes(overIdStr as LeadStatus)) {
+      newStatus = overIdStr as LeadStatus;
+    } else {
+      // Otherwise, it's a lead ID - find that lead's status
+      const targetLead = leads.find((l) => l.id === overIdStr);
+      if (!targetLead) return;
+      newStatus = targetLead.status;
+    }
 
     const lead = leads.find((l) => l.id === leadId);
     if (!lead || lead.status === newStatus) return;

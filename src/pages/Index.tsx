@@ -95,8 +95,8 @@ const Index = () => {
     { name: "Photos", value: leads.filter(l => l.status === "photos_received").length },
     { name: "Mockup", value: leads.filter(l => l.status === "mockup_done").length },
     { name: "Price", value: leads.filter(l => l.status === "price_shared").length },
-    { name: "Payment", value: leads.filter(l => l.status === "payment_done").length },
-    { name: "Production", value: leads.filter(l => l.status === "production").length },
+    { name: "Payment Done", value: leads.filter(l => l.status === "payment_done").length },
+    { name: "In Production", value: leads.filter(l => l.status === "production").length },
     { name: "Delivered", value: deliveredLeads },
   ];
 
@@ -145,12 +145,6 @@ const Index = () => {
             value={`${conversionRate}%`}
             icon={TrendingUp}
             description="To delivered"
-          />
-          <MetricCard
-            title="Total Revenue"
-            value={`${totalRevenue.toLocaleString()} AED`}
-            icon={DollarSign}
-            description="From all orders"
           />
           <MetricCard
             title="Active Leads"
