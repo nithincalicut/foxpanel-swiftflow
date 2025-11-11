@@ -27,7 +27,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
 
 const formSchema = z.object({
   customer_name: z.string().min(1, "Name is required"),
@@ -47,6 +51,16 @@ const sizeOptions = {
   ft: ["21×21 cm", "20×30 cm", "30×30 cm", "30×40 cm"],
 };
 
+const statusLabels: Record<string, string> = {
+  leads: "Leads",
+  photos_received: "Photos Received",
+  mockup_done: "Mockup Done",
+  price_shared: "Price Shared",
+  payment_done: "Payment Done",
+  production: "Production",
+  delivered: "Delivered",
+};
+
 interface EditLeadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -61,6 +75,8 @@ export function EditLeadDialog({
   lead,
 }: EditLeadDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [leadHistory, setLeadHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -81,7 +97,7 @@ export function EditLeadDialog({
   const selectedSize = form.watch("size");
 
   useEffect(() => {
-    if (lead) {
+    if (lead && open) {
       // Check if size is a custom size
       const isCustom = !sizeOptions[lead.product_type as keyof typeof sizeOptions].includes(lead.size);
       
@@ -96,8 +112,30 @@ export function EditLeadDialog({
         price_aed: lead.price_aed?.toString() || "",
         notes: lead.notes || "",
       });
+      
+      fetchLeadHistory();
     }
-  }, [lead, form]);
+  }, [lead, open, form]);
+
+  const fetchLeadHistory = async () => {
+    if (!lead) return;
+    
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from("lead_history")
+        .select("*")
+        .eq("lead_id", lead.id)
+        .order("changed_at", { ascending: false });
+
+      if (error) throw error;
+      setLeadHistory(data || []);
+    } catch (error) {
+      console.error("Error fetching lead history:", error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!lead) return;
@@ -141,7 +179,7 @@ export function EditLeadDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Lead</DialogTitle>
         </DialogHeader>
@@ -325,6 +363,54 @@ export function EditLeadDialog({
             </div>
           </form>
         </Form>
+
+        <Separator className="my-6" />
+
+        {/* Lead History Timeline */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Activity Timeline</h3>
+          {loadingHistory ? (
+            <p className="text-sm text-muted-foreground">Loading history...</p>
+          ) : leadHistory.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No activity yet</p>
+          ) : (
+            <ScrollArea className="h-[300px] pr-4">
+              <div className="space-y-4">
+                {leadHistory.map((history, index) => (
+                  <div key={history.id} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <div className="h-2 w-2 rounded-full bg-primary" />
+                      {index < leadHistory.length - 1 && (
+                        <div className="w-px h-full bg-border" />
+                      )}
+                    </div>
+                    <div className="flex-1 pb-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        {history.old_status && (
+                          <>
+                            <Badge variant="outline" className="text-xs">
+                              {statusLabels[history.old_status] || history.old_status}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">→</span>
+                          </>
+                        )}
+                        <Badge className="text-xs">
+                          {statusLabels[history.new_status] || history.new_status}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(history.changed_at), { addSuffix: true })}
+                      </p>
+                      {history.notes && (
+                        <p className="text-sm mt-2 text-muted-foreground">{history.notes}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
