@@ -1,1 +1,7 @@
 project_id = "lzjhnujekcqljshsqeyi"
+
+[functions.check-follow-ups]
+verify_jwt = false
+
+[functions.create-user]
+verify_jwt = true

@@ -64,27 +64,26 @@ export function AddUserDialog({
     setIsSubmitting(true);
 
     try {
-      // Create user
-      const { data: authData, error: authError } =
-        await supabase.auth.admin.createUser({
+      // Get current session for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error("No active session");
+      }
+
+      // Call edge function to create user
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: {
           email: values.email,
           password: values.password,
-          email_confirm: true,
-          user_metadata: {
-            first_name: values.first_name,
-            last_name: values.last_name,
-          },
-        });
-
-      if (authError) throw authError;
-
-      // Add user role
-      const { error: roleError } = await supabase.from("user_roles").insert({
-        user_id: authData.user.id,
-        role: values.role,
+          first_name: values.first_name,
+          last_name: values.last_name,
+          role: values.role,
+        },
       });
 
-      if (roleError) throw roleError;
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast.success("User added successfully");
       form.reset();
