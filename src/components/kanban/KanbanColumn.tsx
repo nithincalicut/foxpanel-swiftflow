@@ -8,9 +8,10 @@ interface KanbanColumnProps {
   id: string;
   title: string;
   leads: Lead[];
+  onEditLead?: (lead: Lead) => void;
 }
 
-export function KanbanColumn({ id, title, leads }: KanbanColumnProps) {
+export function KanbanColumn({ id, title, leads, onEditLead }: KanbanColumnProps) {
   const { setNodeRef } = useDroppable({ id });
 
   return (
@@ -29,7 +30,7 @@ export function KanbanColumn({ id, title, leads }: KanbanColumnProps) {
         >
           <div className="space-y-2">
             {leads.map((lead) => (
-              <LeadCard key={lead.id} lead={lead} />
+              <LeadCard key={lead.id} lead={lead} onEdit={onEditLead} />
             ))}
           </div>
         </SortableContext>

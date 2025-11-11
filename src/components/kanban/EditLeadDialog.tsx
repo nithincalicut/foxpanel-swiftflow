@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import {
   Dialog,
   DialogContent,
@@ -48,18 +47,19 @@ const sizeOptions = {
   ft: ["21×21 cm", "20×30 cm", "30×30 cm", "30×40 cm"],
 };
 
-interface CreateLeadDialogProps {
+interface EditLeadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onLeadCreated: () => void;
+  onLeadUpdated: () => void;
+  lead: any;
 }
 
-export function CreateLeadDialog({
+export function EditLeadDialog({
   open,
   onOpenChange,
-  onLeadCreated,
-}: CreateLeadDialogProps) {
-  const { user } = useAuth();
+  onLeadUpdated,
+  lead,
+}: EditLeadDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -80,48 +80,59 @@ export function CreateLeadDialog({
   const selectedProductType = form.watch("product_type");
   const selectedSize = form.watch("size");
 
+  useEffect(() => {
+    if (lead) {
+      // Check if size is a custom size
+      const isCustom = !sizeOptions[lead.product_type as keyof typeof sizeOptions].includes(lead.size);
+      
+      form.reset({
+        customer_name: lead.customer_name || "",
+        customer_email: lead.customer_email || "",
+        customer_phone: lead.customer_phone || "",
+        customer_address: lead.customer_address || "",
+        product_type: lead.product_type,
+        size: isCustom ? "Custom Size" : lead.size,
+        custom_size: isCustom ? lead.size : "",
+        price_aed: lead.price_aed?.toString() || "",
+        notes: lead.notes || "",
+      });
+    }
+  }, [lead, form]);
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!user) return;
+    if (!lead) return;
 
     setIsSubmitting(true);
 
     try {
-      // Generate order ID
-      const { data: orderIdData, error: orderIdError } = await supabase.rpc(
-        "generate_order_id",
-        { p_product_type: values.product_type }
-      );
-
-      if (orderIdError) throw orderIdError;
-
       // Determine final size value
       const finalSize = values.size === "Custom Size" && values.custom_size 
         ? values.custom_size 
         : values.size;
 
-      // Create lead
-      const { error: insertError } = await supabase.from("leads").insert({
-        order_id: orderIdData,
-        customer_name: values.customer_name,
-        customer_email: values.customer_email || null,
-        customer_phone: values.customer_phone,
-        customer_address: values.customer_address,
-        product_type: values.product_type,
-        size: finalSize,
-        price_aed: parseFloat(values.price_aed),
-        notes: values.notes || null,
-        created_by: user.id,
-        assigned_to: user.id,
-      });
+      // Update lead
+      const { error: updateError } = await supabase
+        .from("leads")
+        .update({
+          customer_name: values.customer_name,
+          customer_email: values.customer_email || null,
+          customer_phone: values.customer_phone,
+          customer_address: values.customer_address,
+          product_type: values.product_type,
+          size: finalSize,
+          price_aed: parseFloat(values.price_aed),
+          notes: values.notes || null,
+        })
+        .eq("id", lead.id);
 
-      if (insertError) throw insertError;
+      if (updateError) throw updateError;
 
-      toast.success(`Lead created with ID: ${orderIdData}`);
+      toast.success("Lead updated successfully");
       form.reset();
       onOpenChange(false);
-      onLeadCreated();
+      onLeadUpdated();
     } catch (error: any) {
-      toast.error(error.message || "Failed to create lead");
+      toast.error(error.message || "Failed to update lead");
       console.error(error);
     } finally {
       setIsSubmitting(false);
@@ -132,7 +143,7 @@ export function CreateLeadDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create New Lead</DialogTitle>
+          <DialogTitle>Edit Lead</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -201,7 +212,7 @@ export function CreateLeadDialog({
                   <FormLabel>Product Type</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -309,7 +320,7 @@ export function CreateLeadDialog({
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting} className="flex-1">
-                {isSubmitting ? "Creating..." : "Create Lead"}
+                {isSubmitting ? "Updating..." : "Update Lead"}
               </Button>
             </div>
           </form>

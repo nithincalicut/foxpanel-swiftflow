@@ -6,6 +6,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { KanbanColumn } from "@/components/kanban/KanbanColumn";
 import { LeadCard } from "@/components/kanban/LeadCard";
 import { CreateLeadDialog } from "@/components/kanban/CreateLeadDialog";
+import { EditLeadDialog } from "@/components/kanban/EditLeadDialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -27,8 +28,10 @@ export interface Lead {
   customer_name: string;
   customer_email: string | null;
   customer_phone: string;
+  customer_address: string | null;
   product_type: ProductType;
   size: string;
+  price_aed: number | null;
   status: LeadStatus;
   assigned_to: string | null;
   created_by: string;
@@ -53,6 +56,8 @@ export default function Board() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [leadToEdit, setLeadToEdit] = useState<Lead | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -133,6 +138,11 @@ export default function Board() {
     }
   };
 
+  const handleEditLead = (lead: Lead) => {
+    setLeadToEdit(lead);
+    setIsEditDialogOpen(true);
+  };
+
   const activeLead = activeId ? leads.find((l) => l.id === activeId) : null;
 
   return (
@@ -157,6 +167,7 @@ export default function Board() {
               id={column.id}
               title={column.title}
               leads={leads.filter((lead) => lead.status === column.id)}
+              onEditLead={handleEditLead}
             />
           ))}
         </div>
@@ -170,6 +181,13 @@ export default function Board() {
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
         onLeadCreated={fetchLeads}
+      />
+
+      <EditLeadDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        onLeadUpdated={fetchLeads}
+        lead={leadToEdit}
       />
     </DashboardLayout>
   );

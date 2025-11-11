@@ -19,6 +19,7 @@ export type Database = {
           assigned_to: string | null
           created_at: string
           created_by: string
+          customer_address: string | null
           customer_email: string | null
           customer_name: string
           customer_phone: string
@@ -26,6 +27,7 @@ export type Database = {
           last_status_change: string
           notes: string | null
           order_id: string
+          price_aed: number | null
           product_type: Database["public"]["Enums"]["product_type"]
           size: string
           status: Database["public"]["Enums"]["lead_status"]
@@ -35,6 +37,7 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string
           created_by: string
+          customer_address?: string | null
           customer_email?: string | null
           customer_name: string
           customer_phone: string
@@ -42,6 +45,7 @@ export type Database = {
           last_status_change?: string
           notes?: string | null
           order_id: string
+          price_aed?: number | null
           product_type: Database["public"]["Enums"]["product_type"]
           size: string
           status?: Database["public"]["Enums"]["lead_status"]
@@ -51,6 +55,7 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string
           created_by?: string
+          customer_address?: string | null
           customer_email?: string | null
           customer_name?: string
           customer_phone?: string
@@ -58,6 +63,7 @@ export type Database = {
           last_status_change?: string
           notes?: string | null
           order_id?: string
+          price_aed?: number | null
           product_type?: Database["public"]["Enums"]["product_type"]
           size?: string
           status?: Database["public"]["Enums"]["lead_status"]

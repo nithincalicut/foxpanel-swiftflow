@@ -13,9 +13,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { AddUserDialog } from "@/components/users/AddUserDialog";
+import { EditUserDialog } from "@/components/users/EditUserDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +41,8 @@ export default function Users() {
   const { userRole } = useAuth();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<UserWithRole | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserWithRole | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -102,24 +105,15 @@ export default function Users() {
 
     setIsDeleting(true);
     try {
-      // Delete user role first
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("user_id", userToDelete.id);
+      // Call edge function to delete user
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: {
+          user_id: userToDelete.id,
+        },
+      });
 
-      if (roleError) throw roleError;
-
-      // Delete profile
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .delete()
-        .eq("id", userToDelete.id);
-
-      if (profileError) throw profileError;
-
-      // Note: User deletion from auth requires service role key
-      // In production, you would handle this through an edge function
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast.success("User deleted successfully");
       fetchUsers();
@@ -130,6 +124,11 @@ export default function Users() {
       setIsDeleting(false);
       setUserToDelete(null);
     }
+  };
+
+  const handleEditUser = (user: UserWithRole) => {
+    setUserToEdit(user);
+    setIsEditDialogOpen(true);
   };
 
   if (userRole !== "admin") {
@@ -192,13 +191,22 @@ export default function Users() {
                       {new Date(user.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setUserToDelete(user)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditUser(user)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setUserToDelete(user)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -212,6 +220,13 @@ export default function Users() {
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
         onUserAdded={fetchUsers}
+      />
+
+      <EditUserDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        onUserUpdated={fetchUsers}
+        user={userToEdit}
       />
 
       <AlertDialog

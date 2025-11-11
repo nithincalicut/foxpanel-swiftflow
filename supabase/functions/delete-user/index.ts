@@ -6,12 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface CreateUserRequest {
-  email: string;
-  password: string;
-  first_name: string;
-  last_name: string;
-  role: 'admin' | 'sales_staff';
+interface DeleteUserRequest {
+  user_id: string;
 }
 
 serve(async (req) => {
@@ -79,71 +75,35 @@ serve(async (req) => {
       throw new Error('User does not have admin privileges');
     }
 
-    console.log('Admin verified, proceeding with user creation');
+    console.log('Admin verified, proceeding with user deletion');
 
     // Parse request body
-    const { email, password, first_name, last_name, role }: CreateUserRequest = await req.json();
+    const { user_id }: DeleteUserRequest = await req.json();
 
     // Validate input
-    if (!email || !password || !first_name || !last_name || !role) {
-      throw new Error('Missing required fields');
+    if (!user_id) {
+      throw new Error('Missing user_id');
     }
 
-    // Check for duplicate email
-    const { data: existingUser, error: checkError } = await supabaseAdmin.auth.admin.listUsers();
-    
-    if (checkError) {
-      console.error('Error checking for duplicate user:', checkError);
-      throw new Error('Failed to verify email availability');
+    // Prevent admin from deleting themselves
+    if (user_id === user.id) {
+      throw new Error('You cannot delete your own account');
     }
 
-    const emailExists = existingUser.users.some(user => user.email === email);
-    if (emailExists) {
-      throw new Error('A user with this email already exists');
+    // Delete user from auth (this will cascade to profiles and user_roles via foreign keys)
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user_id);
+
+    if (deleteError) {
+      console.error('User deletion error:', deleteError);
+      throw deleteError;
     }
 
-    // Create user with admin client
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        first_name,
-        last_name,
-      },
-    });
-
-    if (authError) {
-      console.error('User creation error:', authError);
-      throw authError;
-    }
-
-    console.log('User created successfully:', authData.user.id);
-
-    // Add user role
-    const { error: roleInsertError } = await supabaseAdmin
-      .from('user_roles')
-      .insert({
-        user_id: authData.user.id,
-        role: role,
-      });
-
-    if (roleInsertError) {
-      console.error('Role insertion error:', roleInsertError);
-      // Try to delete the created user if role insertion fails
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-      throw roleInsertError;
-    }
-
-    console.log('User role assigned successfully');
+    console.log('User deleted successfully:', user_id);
 
     return new Response(
       JSON.stringify({ 
-        success: true, 
-        user: {
-          id: authData.user.id,
-          email: authData.user.email,
-        }
+        success: true,
+        message: 'User deleted successfully'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -151,10 +111,10 @@ serve(async (req) => {
       }
     );
   } catch (error: any) {
-    console.error('Error in create-user function:', error);
+    console.error('Error in delete-user function:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Failed to create user',
+        error: error.message || 'Failed to delete user',
         success: false 
       }),
       {

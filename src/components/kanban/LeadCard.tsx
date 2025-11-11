@@ -3,11 +3,13 @@ import { CSS } from "@dnd-kit/utilities";
 import { Lead } from "@/pages/Board";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Mail, Package } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Phone, Mail, Package, Edit } from "lucide-react";
 
 interface LeadCardProps {
   lead: Lead;
   isDragging?: boolean;
+  onEdit?: (lead: Lead) => void;
 }
 
 const productLabels = {
@@ -16,7 +18,7 @@ const productLabels = {
   ft: "FT",
 };
 
-export function LeadCard({ lead, isDragging = false }: LeadCardProps) {
+export function LeadCard({ lead, isDragging = false, onEdit }: LeadCardProps) {
   const {
     attributes,
     listeners,
@@ -46,9 +48,24 @@ export function LeadCard({ lead, isDragging = false }: LeadCardProps) {
             <h4 className="font-semibold text-sm truncate">{lead.customer_name}</h4>
             <p className="text-xs text-muted-foreground font-mono">{lead.order_id}</p>
           </div>
-          <Badge variant="secondary" className="text-xs shrink-0">
-            {productLabels[lead.product_type]}
-          </Badge>
+          <div className="flex items-center gap-1">
+            <Badge variant="secondary" className="text-xs shrink-0">
+              {productLabels[lead.product_type]}
+            </Badge>
+            {onEdit && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(lead);
+                }}
+              >
+                <Edit className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       
@@ -69,6 +86,12 @@ export function LeadCard({ lead, isDragging = false }: LeadCardProps) {
           <Package className="h-3 w-3 shrink-0" />
           <span>Size: {lead.size}</span>
         </div>
+
+        {lead.price_aed && (
+          <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
+            <span>AED {parseFloat(lead.price_aed as any).toFixed(2)}</span>
+          </div>
+        )}
         
         {lead.notes && (
           <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
