@@ -55,16 +55,30 @@ const itemSchema = z.object({
   price_aed: z.string().min(1, "Price is required"),
 });
 
-const formSchema = z.object({
-  customer_name: z.string().min(1, "Name is required"),
-  customer_email: z.string().email("Invalid email").optional().or(z.literal("")),
-  customer_phone: z.string().min(10, "Phone number is required"),
-  customer_address: z.string().min(1, "Address is required"),
-  notes: z.string().optional(),
-  items: z.array(itemSchema).min(1, "At least one item is required"),
-  payment_type: z.enum(["full_payment", "partial_payment", "cod"]).optional(),
-  delivery_method: z.enum(["courier", "store_collection"]).optional(),
-});
+const createFormSchema = (status?: string) => {
+  const needsPaymentInfo = status === 'payment_done' || status === 'production' || status === 'delivered';
+  
+  return z.object({
+    customer_name: z.string().min(1, "Name is required"),
+    customer_email: z.string().email("Invalid email").optional().or(z.literal("")),
+    customer_phone: z.string().min(10, "Phone number is required"),
+    customer_address: z.string().min(1, "Address is required"),
+    notes: z.string().optional(),
+    items: z.array(itemSchema).min(1, "At least one item is required"),
+    payment_type: needsPaymentInfo 
+      ? z.enum(["full_payment", "partial_payment", "cod"], {
+          required_error: "Payment type is required for this stage"
+        })
+      : z.enum(["full_payment", "partial_payment", "cod"]).optional(),
+    delivery_method: needsPaymentInfo
+      ? z.enum(["courier", "store_collection"], {
+          required_error: "Delivery method is required for this stage"
+        })
+      : z.enum(["courier", "store_collection"]).optional(),
+  });
+};
+
+type FormSchema = z.infer<ReturnType<typeof createFormSchema>>;
 
 const sizeOptions = {
   fp_pro: ["20×20 cm", "20×30 cm"],
@@ -101,8 +115,8 @@ export function EditLeadDialog({
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<FormSchema>({
+    resolver: zodResolver(createFormSchema(lead?.status)),
     defaultValues: {
       customer_name: "",
       customer_email: "",
@@ -186,7 +200,7 @@ export function EditLeadDialog({
     }
   };
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: FormSchema) => {
     if (!lead) return;
 
     setIsSubmitting(true);
@@ -405,16 +419,16 @@ export function EditLeadDialog({
                 />
 
                 {(lead?.status === 'payment_done' || lead?.status === 'production' || lead?.status === 'delivered') && (
-                  <div className="grid grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/50">
+                  <div className="grid grid-cols-2 gap-4 p-4 border-2 border-primary/20 rounded-lg bg-primary/5">
                     <FormField
                       control={form.control}
                       name="payment_type"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Payment Type</FormLabel>
+                          <FormLabel className="text-primary font-semibold">Payment Type *</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="border-primary/30">
                                 <SelectValue placeholder="Select payment type" />
                               </SelectTrigger>
                             </FormControl>
@@ -434,10 +448,10 @@ export function EditLeadDialog({
                       name="delivery_method"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Delivery Method</FormLabel>
+                          <FormLabel className="text-primary font-semibold">Delivery Method *</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="border-primary/30">
                                 <SelectValue placeholder="Select delivery method" />
                               </SelectTrigger>
                             </FormControl>

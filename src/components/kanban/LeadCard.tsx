@@ -138,26 +138,30 @@ export function LeadCard({ lead, isDragging = false, onEdit, isSelected = false,
           </div>
         )}
 
-        {lead.payment_type && (
-          <div className="flex items-center gap-1.5 text-xs mt-2">
-            <CreditCard className="h-3 w-3 text-muted-foreground" />
-            <Badge variant="secondary" className="text-xs">
-              {lead.payment_type === 'full_payment' ? 'Full Payment' : 
-               lead.payment_type === 'partial_payment' ? '50% Payment' : 'COD'}
-            </Badge>
-          </div>
-        )}
-
-        {lead.delivery_method && (
-          <div className="flex items-center gap-1.5 text-xs mt-1">
-            {lead.delivery_method === 'courier' ? (
-              <Truck className="h-3 w-3 text-muted-foreground" />
-            ) : (
-              <Store className="h-3 w-3 text-muted-foreground" />
+        {(lead.payment_type || lead.delivery_method) && (
+          <div className="mt-3 p-2 rounded-md bg-primary/10 border border-primary/20 space-y-1.5">
+            {lead.payment_type && (
+              <div className="flex items-center gap-1.5 text-xs">
+                <CreditCard className="h-3.5 w-3.5 text-primary" />
+                <Badge variant="secondary" className="text-xs font-semibold bg-primary/20 text-primary border-primary/30">
+                  {lead.payment_type === 'full_payment' ? 'Full Payment' : 
+                   lead.payment_type === 'partial_payment' ? '50% Payment' : 'COD'}
+                </Badge>
+              </div>
             )}
-            <Badge variant="outline" className="text-xs">
-              {lead.delivery_method === 'courier' ? 'Courier Delivery' : 'Store Collection'}
-            </Badge>
+
+            {lead.delivery_method && (
+              <div className="flex items-center gap-1.5 text-xs">
+                {lead.delivery_method === 'courier' ? (
+                  <Truck className="h-3.5 w-3.5 text-primary" />
+                ) : (
+                  <Store className="h-3.5 w-3.5 text-primary" />
+                )}
+                <Badge variant="outline" className="text-xs font-semibold border-primary/30 text-primary">
+                  {lead.delivery_method === 'courier' ? 'Courier' : 'Store Collection'}
+                </Badge>
+              </div>
+            )}
           </div>
         )}
         

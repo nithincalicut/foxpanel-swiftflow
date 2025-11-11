@@ -203,6 +203,12 @@ export default function Board() {
     const lead = leads.find((l) => l.id === leadId);
     if (!lead || lead.status === newStatus) return;
 
+    // Validate payment info when moving to production or delivered
+    if ((newStatus === 'production' || newStatus === 'delivered') && !lead.payment_type) {
+      toast.error("Please set payment type before moving to " + (newStatus === 'production' ? 'Production' : 'Delivered'));
+      return;
+    }
+
     // Optimistic update
     setLeads((prev) =>
       prev.map((l) => (l.id === leadId ? { ...l, status: newStatus } : l))
