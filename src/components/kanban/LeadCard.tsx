@@ -34,12 +34,15 @@ export function LeadCard({ lead, isDragging = false, onEdit }: LeadCardProps) {
     opacity: isDragging || isSortableDragging ? 0.5 : 1,
   };
 
+  // Separate drag listeners from the edit button
+  const { onClick, ...dragListeners } = listeners || {};
+
   return (
     <Card
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
+      {...dragListeners}
       className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
     >
       <CardHeader className="p-3 pb-2">
@@ -59,7 +62,10 @@ export function LeadCard({ lead, isDragging = false, onEdit }: LeadCardProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 w-6 p-0 hover:bg-accent"
+                className="h-6 w-6 p-0 hover:bg-accent cursor-pointer"
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                }}
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
@@ -68,7 +74,7 @@ export function LeadCard({ lead, isDragging = false, onEdit }: LeadCardProps) {
                 }}
                 title="Edit lead"
               >
-                <Edit className="h-3 w-3" />
+                <Edit className="h-3 w-3 pointer-events-none" />
               </Button>
             )}
           </div>
