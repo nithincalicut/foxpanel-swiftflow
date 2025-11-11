@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Phone, Mail, Package, Edit, ShoppingCart, Truck, Store, CreditCard, Banknote } from "lucide-react";
+import { Phone, Mail, Package, Edit, ShoppingCart, Truck, Store, CreditCard, Banknote, AlertTriangle } from "lucide-react";
 
 interface LeadCardProps {
   lead: Lead;
@@ -41,6 +41,10 @@ export function LeadCard({ lead, isDragging = false, onEdit, isSelected = false,
   // Separate drag listeners from the edit button
   const { onClick, ...dragListeners } = listeners || {};
 
+  // Check if payment info is missing for payment_done, production, or delivered stages
+  const needsPaymentInfo = ['payment_done', 'production', 'delivered'].includes(lead.status);
+  const missingPaymentInfo = needsPaymentInfo && (!lead.payment_type || !lead.delivery_method);
+
   return (
     <Card
       ref={setNodeRef}
@@ -49,9 +53,21 @@ export function LeadCard({ lead, isDragging = false, onEdit, isSelected = false,
       {...dragListeners}
       className={`cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${
         isSelected ? 'ring-2 ring-primary' : ''
-      }`}
+      } ${missingPaymentInfo ? 'border-2 border-amber-500/50' : ''}`}
     >
       <CardHeader className="p-3 pb-2">
+        {missingPaymentInfo && (
+          <div className="mb-2 flex items-center gap-1.5 p-2 bg-amber-500/10 border border-amber-500/30 rounded-md">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+            <span className="text-xs font-medium text-amber-700">
+              {!lead.payment_type && !lead.delivery_method 
+                ? 'Payment & delivery info required'
+                : !lead.payment_type 
+                ? 'Payment type required'
+                : 'Delivery method required'}
+            </span>
+          </div>
+        )}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-start gap-2 flex-1 min-w-0">
             {selectionMode && onSelect && (

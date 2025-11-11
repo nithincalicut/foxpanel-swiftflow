@@ -1,7 +1,8 @@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Search, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Search, X, AlertTriangle } from "lucide-react";
 import { LeadStatus, ProductType } from "@/pages/Board";
 
 interface SearchFiltersProps {
@@ -14,6 +15,9 @@ interface SearchFiltersProps {
   onClearFilters: () => void;
   totalLeads: number;
   filteredCount: number;
+  missingPaymentInfoCount: number;
+  showMissingPaymentOnly: boolean;
+  onToggleMissingPayment: () => void;
 }
 
 export function SearchFilters({
@@ -26,11 +30,36 @@ export function SearchFilters({
   onClearFilters,
   totalLeads,
   filteredCount,
+  missingPaymentInfoCount,
+  showMissingPaymentOnly,
+  onToggleMissingPayment,
 }: SearchFiltersProps) {
-  const hasActiveFilters = searchTerm || selectedProductType !== "all" || selectedStatus !== "all";
+  const hasActiveFilters = searchTerm || selectedProductType !== "all" || selectedStatus !== "all" || showMissingPaymentOnly;
 
   return (
     <div className="space-y-4 mb-6">
+      {missingPaymentInfoCount > 0 && (
+        <div className="flex items-center justify-between p-3 bg-amber-500/10 border-2 border-amber-500/30 rounded-lg">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-amber-600" />
+            <div>
+              <p className="font-semibold text-sm text-amber-900">Payment Information Required</p>
+              <p className="text-xs text-amber-700">
+                {missingPaymentInfoCount} lead{missingPaymentInfoCount !== 1 ? 's' : ''} missing payment or delivery details
+              </p>
+            </div>
+          </div>
+          <Button
+            variant={showMissingPaymentOnly ? "default" : "outline"}
+            size="sm"
+            onClick={onToggleMissingPayment}
+            className={showMissingPaymentOnly ? "bg-amber-600 hover:bg-amber-700" : "border-amber-500 text-amber-700 hover:bg-amber-500/10"}
+          >
+            {showMissingPaymentOnly ? "Show All" : "View These"}
+          </Button>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />

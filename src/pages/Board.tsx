@@ -82,6 +82,7 @@ export default function Board() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProductType, setSelectedProductType] = useState<ProductType | "all">("all");
   const [selectedStatus, setSelectedStatus] = useState<LeadStatus | "all">("all");
+  const [showMissingPaymentOnly, setShowMissingPaymentOnly] = useState(false);
 
   // Column width and view states
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
@@ -240,6 +241,7 @@ export default function Board() {
     setSearchTerm("");
     setSelectedProductType("all");
     setSelectedStatus("all");
+    setShowMissingPaymentOnly(false);
   };
 
   const handleWidthChange = (id: string, width: number) => {
@@ -303,9 +305,21 @@ export default function Board() {
       const matchesStatus =
         selectedStatus === "all" || lead.status === selectedStatus;
 
-      return matchesSearch && matchesProductType && matchesStatus;
+      const needsPaymentInfo = ['payment_done', 'production', 'delivered'].includes(lead.status);
+      const missingPaymentInfo = needsPaymentInfo && (!lead.payment_type || !lead.delivery_method);
+      const matchesPaymentFilter = !showMissingPaymentOnly || missingPaymentInfo;
+
+      return matchesSearch && matchesProductType && matchesStatus && matchesPaymentFilter;
     });
-  }, [leads, searchTerm, selectedProductType, selectedStatus]);
+  }, [leads, searchTerm, selectedProductType, selectedStatus, showMissingPaymentOnly]);
+
+  // Count leads missing payment info
+  const missingPaymentInfoCount = useMemo(() => {
+    return leads.filter(lead => {
+      const needsPaymentInfo = ['payment_done', 'production', 'delivered'].includes(lead.status);
+      return needsPaymentInfo && (!lead.payment_type || !lead.delivery_method);
+    }).length;
+  }, [leads]);
 
   const activeLead = activeId ? leads.find((l) => l.id === activeId) : null;
 
@@ -355,6 +369,9 @@ export default function Board() {
         onClearFilters={handleClearFilters}
         totalLeads={leads.length}
         filteredCount={filteredLeads.length}
+        missingPaymentInfoCount={missingPaymentInfoCount}
+        showMissingPaymentOnly={showMissingPaymentOnly}
+        onToggleMissingPayment={() => setShowMissingPaymentOnly(!showMissingPaymentOnly)}
       />
 
       <DndContext
