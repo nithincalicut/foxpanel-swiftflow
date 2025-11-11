@@ -4,12 +4,16 @@ import { Lead } from "@/pages/Board";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Phone, Mail, Package, Edit, ShoppingCart } from "lucide-react";
 
 interface LeadCardProps {
   lead: Lead;
   isDragging?: boolean;
   onEdit?: (lead: Lead) => void;
+  isSelected?: boolean;
+  onSelect?: (leadId: string, selected: boolean) => void;
+  selectionMode?: boolean;
 }
 
 const productLabels = {
@@ -18,7 +22,7 @@ const productLabels = {
   ft: "FT",
 };
 
-export function LeadCard({ lead, isDragging = false, onEdit }: LeadCardProps) {
+export function LeadCard({ lead, isDragging = false, onEdit, isSelected = false, onSelect, selectionMode = false }: LeadCardProps) {
   const {
     attributes,
     listeners,
@@ -43,13 +47,25 @@ export function LeadCard({ lead, isDragging = false, onEdit }: LeadCardProps) {
       style={style}
       {...attributes}
       {...dragListeners}
-      className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
+      className={`cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${
+        isSelected ? 'ring-2 ring-primary' : ''
+      }`}
     >
       <CardHeader className="p-3 pb-2">
         <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-sm truncate">{lead.customer_name}</h4>
-            <p className="text-xs text-muted-foreground font-mono">{lead.order_id}</p>
+          <div className="flex items-start gap-2 flex-1 min-w-0">
+            {selectionMode && onSelect && (
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={(checked) => onSelect(lead.id, !!checked)}
+                onClick={(e) => e.stopPropagation()}
+                className="mt-0.5"
+              />
+            )}
+            <div className="flex-1 min-w-0">
+              <h4 className="font-semibold text-sm truncate">{lead.customer_name}</h4>
+              <p className="text-xs text-muted-foreground font-mono">{lead.order_id}</p>
+            </div>
           </div>
           <div className="flex items-center gap-1">
             {lead.lead_items && lead.lead_items.length > 0 && (

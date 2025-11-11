@@ -18,6 +18,9 @@ interface ResizableKanbanColumnProps {
   onMaximize: () => void;
   isMinimized: boolean;
   isMaximized: boolean;
+  selectionMode?: boolean;
+  selectedLeads?: string[];
+  onLeadSelect?: (leadId: string, selected: boolean) => void;
 }
 
 const MIN_WIDTH = 250;
@@ -34,6 +37,9 @@ export function ResizableKanbanColumn({
   onMaximize,
   isMinimized,
   isMaximized,
+  selectionMode = false,
+  selectedLeads = [],
+  onLeadSelect,
 }: ResizableKanbanColumnProps) {
   const { setNodeRef } = useDroppable({ id });
   const [isResizing, setIsResizing] = useState(false);
@@ -115,7 +121,14 @@ export function ResizableKanbanColumn({
                   <p className="text-xs text-muted-foreground text-center py-4">No leads</p>
                 ) : (
                   leads.map((lead) => (
-                    <LeadCard key={lead.id} lead={lead} onEdit={onEditLead} />
+                    <LeadCard
+                      key={lead.id}
+                      lead={lead}
+                      onEdit={onEditLead}
+                      selectionMode={selectionMode}
+                      isSelected={selectedLeads.includes(lead.id)}
+                      onSelect={onLeadSelect}
+                    />
                   ))
                 )}
               </div>

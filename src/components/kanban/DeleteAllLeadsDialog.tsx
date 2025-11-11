@@ -12,6 +12,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -27,9 +29,15 @@ export function DeleteAllLeadsDialog({
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
 
   const handleDeleteAll = async () => {
     if (!user) return;
+
+    if (confirmText !== "DELETE") {
+      toast.error('Please type "DELETE" to confirm');
+      return;
+    }
     
     setIsDeleting(true);
     try {
@@ -85,6 +93,7 @@ export function DeleteAllLeadsDialog({
 
       toast.success(`${leads.length} leads deleted (can be restored within 30 days)`);
       setOpen(false);
+      setConfirmText("");
       onLeadsDeleted();
     } catch (error: any) {
       toast.error(error.message || "Failed to delete leads");
@@ -109,17 +118,36 @@ export function DeleteAllLeadsDialog({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete All Leads?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will delete all <strong>{totalLeads} leads</strong> from the board.
-              <br /><br />
-              <strong>Don't worry!</strong> All leads will be moved to the trash and can be restored within 30 days.
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  This will delete all <strong>{totalLeads} leads</strong> from the board.
+                  <br /><br />
+                  <strong>Don't worry!</strong> All leads will be moved to the trash and can be restored within 30 days.
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-delete" className="text-foreground">
+                    Type <strong>DELETE</strong> to confirm:
+                  </Label>
+                  <Input
+                    id="confirm-delete"
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
+                    placeholder="DELETE"
+                    disabled={isDeleting}
+                    className="font-mono"
+                  />
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting} onClick={() => setConfirmText("")}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteAll}
-              disabled={isDeleting}
+              disabled={isDeleting || confirmText !== "DELETE"}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeleting ? "Deleting..." : `Delete ${totalLeads} Leads`}

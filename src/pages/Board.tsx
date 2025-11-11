@@ -9,9 +9,10 @@ import { CreateLeadDialog } from "@/components/kanban/CreateLeadDialog";
 import { EditLeadDialog } from "@/components/kanban/EditLeadDialog";
 import { RestoreLeadsDialog } from "@/components/kanban/RestoreLeadsDialog";
 import { DeleteAllLeadsDialog } from "@/components/kanban/DeleteAllLeadsDialog";
+import { BulkActionsBar } from "@/components/kanban/BulkActionsBar";
 import { SearchFilters } from "@/components/kanban/SearchFilters";
 import { Button } from "@/components/ui/button";
-import { Plus, RotateCcw } from "lucide-react";
+import { Plus, RotateCcw, CheckSquare } from "lucide-react";
 import { toast } from "sonner";
 
 export type LeadStatus = 
@@ -81,6 +82,10 @@ export default function Board() {
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
   const [minimizedColumns, setMinimizedColumns] = useState<Set<string>>(new Set());
   const [maximizedColumn, setMaximizedColumn] = useState<string | null>(null);
+
+  // Bulk selection states
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -257,6 +262,17 @@ export default function Board() {
     setMaximizedColumn(null);
   };
 
+  const handleLeadSelect = (leadId: string, selected: boolean) => {
+    setSelectedLeads(prev =>
+      selected ? [...prev, leadId] : prev.filter(id => id !== leadId)
+    );
+  };
+
+  const handleClearSelection = () => {
+    setSelectedLeads([]);
+    setSelectionMode(false);
+  };
+
   // Filter leads based on search and filters
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
@@ -284,6 +300,18 @@ export default function Board() {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-3xl font-bold">Sales Pipeline</h2>
         <div className="flex gap-2">
+          <Button
+            variant={selectionMode ? "default" : "outline"}
+            onClick={() => {
+              setSelectionMode(!selectionMode);
+              if (selectionMode) {
+                setSelectedLeads([]);
+              }
+            }}
+          >
+            <CheckSquare className="mr-2 h-4 w-4" />
+            {selectionMode ? "Exit Selection" : "Select Leads"}
+          </Button>
           <DeleteAllLeadsDialog
             onLeadsDeleted={fetchLeads}
             totalLeads={leads.length}
@@ -332,6 +360,9 @@ export default function Board() {
               onMaximize={() => handleNormalView(column.id)}
               isMinimized={minimizedColumns.has(column.id)}
               isMaximized={maximizedColumn === column.id}
+              selectionMode={selectionMode}
+              selectedLeads={selectedLeads}
+              onLeadSelect={handleLeadSelect}
             />
           ))}
         </div>
@@ -340,6 +371,13 @@ export default function Board() {
           {activeLead && <LeadCard lead={activeLead} isDragging />}
         </DragOverlay>
       </DndContext>
+
+      <BulkActionsBar
+        selectedLeads={selectedLeads}
+        leads={leads}
+        onClearSelection={handleClearSelection}
+        onLeadsDeleted={fetchLeads}
+      />
 
       <CreateLeadDialog
         open={isCreateDialogOpen}
