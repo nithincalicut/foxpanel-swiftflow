@@ -10,7 +10,7 @@ import { TrendingUp, DollarSign, Users, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 
 const Index = () => {
-  const { user, isLoading } = useAuth();
+  const { user, userRole, isLoading } = useAuth();
   const navigate = useNavigate();
   const [leads, setLeads] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
@@ -133,7 +133,7 @@ const Index = () => {
         </div>
 
         {/* Metrics Row */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className={`grid gap-4 md:grid-cols-2 ${userRole === 'admin' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
           <MetricCard
             title="Total Leads"
             value={totalLeads}
@@ -146,6 +146,14 @@ const Index = () => {
             icon={TrendingUp}
             description="To delivered"
           />
+          {userRole === 'admin' && (
+            <MetricCard
+              title="Total Revenue"
+              value={`${totalRevenue.toLocaleString()} AED`}
+              icon={DollarSign}
+              description="From all orders"
+            />
+          )}
           <MetricCard
             title="Active Leads"
             value={activeLeads}
@@ -155,17 +163,19 @@ const Index = () => {
         </div>
 
         {/* Charts Row */}
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className={`grid gap-4 ${userRole === 'admin' ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
           <LeadsChart
             title="Leads by Stage"
             data={leadsByStage}
             type="pie"
           />
-          <LeadsChart
-            title="Revenue by Product Type"
-            data={revenueByProduct}
-            type="bar"
-          />
+          {userRole === 'admin' && (
+            <LeadsChart
+              title="Revenue by Product Type"
+              data={revenueByProduct}
+              type="bar"
+            />
+          )}
         </div>
 
         {/* Recent Activity */}
