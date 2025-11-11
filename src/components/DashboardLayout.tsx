@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, Settings, User, LayoutDashboard, Users, Home } from "lucide-react";
+import { LogOut, Settings, User, LayoutDashboard, Users, Home, FileText } from "lucide-react";
 import { AppNavLink } from "@/components/AppNavLink";
 
 interface DashboardLayoutProps {
@@ -52,8 +52,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <nav className="hidden md:flex items-center gap-2">
                 <AppNavLink to="/" icon={Home}>Dashboard</AppNavLink>
                 <AppNavLink to="/board" icon={LayoutDashboard}>Board</AppNavLink>
+                <AppNavLink to="/reports" icon={FileText}>Reports</AppNavLink>
                 {userRole === "admin" && (
-                  <AppNavLink to="/users" icon={Users}>Users</AppNavLink>
+                  <>
+                    <AppNavLink to="/activity-logs" icon={LayoutDashboard}>Activity Logs</AppNavLink>
+                    <AppNavLink to="/users" icon={Users}>Users</AppNavLink>
+                  </>
                 )}
               </nav>
             </div>
