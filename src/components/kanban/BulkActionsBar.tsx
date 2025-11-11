@@ -37,8 +37,12 @@ export function BulkActionsBar({
   if (selectedLeads.length === 0) return null;
 
   const handleBulkDelete = async () => {
-    if (!user) return;
+    if (!user) {
+      console.error('No user found for bulk delete');
+      return;
+    }
 
+    console.log('Starting bulk delete for leads:', selectedLeads);
     setIsDeleting(true);
     try {
       // Get selected leads data

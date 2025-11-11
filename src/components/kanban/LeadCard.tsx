@@ -57,7 +57,10 @@ export function LeadCard({ lead, isDragging = false, onEdit, isSelected = false,
             {selectionMode && onSelect && (
               <Checkbox
                 checked={isSelected}
-                onCheckedChange={(checked) => onSelect(lead.id, !!checked)}
+                onCheckedChange={(checked) => {
+                  console.log('Checkbox clicked:', { leadId: lead.id, checked, isSelected });
+                  onSelect(lead.id, !!checked);
+                }}
                 onClick={(e) => e.stopPropagation()}
                 className="mt-0.5"
               />

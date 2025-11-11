@@ -263,9 +263,12 @@ export default function Board() {
   };
 
   const handleLeadSelect = (leadId: string, selected: boolean) => {
-    setSelectedLeads(prev =>
-      selected ? [...prev, leadId] : prev.filter(id => id !== leadId)
-    );
+    console.log('Lead selection changed:', { leadId, selected, selectionMode });
+    setSelectedLeads(prev => {
+      const newSelection = selected ? [...prev, leadId] : prev.filter(id => id !== leadId);
+      console.log('New selected leads:', newSelection);
+      return newSelection;
+    });
   };
 
   const handleClearSelection = () => {
@@ -303,7 +306,9 @@ export default function Board() {
           <Button
             variant={selectionMode ? "default" : "outline"}
             onClick={() => {
-              setSelectionMode(!selectionMode);
+              const newMode = !selectionMode;
+              console.log('Selection mode toggled:', newMode);
+              setSelectionMode(newMode);
               if (selectionMode) {
                 setSelectedLeads([]);
               }
