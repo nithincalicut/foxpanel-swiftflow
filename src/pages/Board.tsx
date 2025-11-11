@@ -214,6 +214,7 @@ export default function Board() {
   };
 
   const handleEditLead = (lead: Lead) => {
+    console.log('handleEditLead called with lead:', lead);
     setLeadToEdit(lead);
     setIsEditDialogOpen(true);
   };

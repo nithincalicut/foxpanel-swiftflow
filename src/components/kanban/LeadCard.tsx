@@ -59,11 +59,14 @@ export function LeadCard({ lead, isDragging = false, onEdit }: LeadCardProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 w-6 p-0"
+                className="h-6 w-6 p-0 hover:bg-accent"
                 onClick={(e) => {
                   e.stopPropagation();
+                  e.preventDefault();
+                  console.log('Edit button clicked for lead:', lead.id);
                   onEdit(lead);
                 }}
+                title="Edit lead"
               >
                 <Edit className="h-3 w-3" />
               </Button>

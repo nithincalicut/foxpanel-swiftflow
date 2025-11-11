@@ -111,9 +111,13 @@ export function ResizableKanbanColumn({
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-2">
-                {leads.map((lead) => (
-                  <LeadCard key={lead.id} lead={lead} onEdit={onEditLead} />
-                ))}
+                {leads.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">No leads</p>
+                ) : (
+                  leads.map((lead) => (
+                    <LeadCard key={lead.id} lead={lead} onEdit={onEditLead} />
+                  ))
+                )}
               </div>
             </SortableContext>
 
