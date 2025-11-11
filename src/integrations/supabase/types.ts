@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      lead_history: {
+        Row: {
+          changed_at: string
+          changed_by: string
+          created_at: string
+          id: string
+          lead_id: string
+          new_status: Database["public"]["Enums"]["lead_status"]
+          notes: string | null
+          old_status: Database["public"]["Enums"]["lead_status"] | null
+        }
+        Insert: {
+          changed_at?: string
+          changed_by: string
+          created_at?: string
+          id?: string
+          lead_id: string
+          new_status: Database["public"]["Enums"]["lead_status"]
+          notes?: string | null
+          old_status?: Database["public"]["Enums"]["lead_status"] | null
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+          new_status?: Database["public"]["Enums"]["lead_status"]
+          notes?: string | null
+          old_status?: Database["public"]["Enums"]["lead_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_history_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           assigned_to: string | null

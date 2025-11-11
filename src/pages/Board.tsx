@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCorners } from "@dnd-kit/core";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,6 +7,7 @@ import { KanbanColumn } from "@/components/kanban/KanbanColumn";
 import { LeadCard } from "@/components/kanban/LeadCard";
 import { CreateLeadDialog } from "@/components/kanban/CreateLeadDialog";
 import { EditLeadDialog } from "@/components/kanban/EditLeadDialog";
+import { SearchFilters } from "@/components/kanban/SearchFilters";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -58,6 +59,11 @@ export default function Board() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [leadToEdit, setLeadToEdit] = useState<Lead | null>(null);
+  
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [productTypeFilter, setProductTypeFilter] = useState<ProductType | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<LeadStatus | "all">("all");
 
   useEffect(() => {
     if (user) {
@@ -143,17 +149,55 @@ export default function Board() {
     setIsEditDialogOpen(true);
   };
 
+  // Filter leads based on search and filters
+  const filteredLeads = useMemo(() => {
+    return leads.filter((lead) => {
+      const matchesSearch =
+        !searchTerm ||
+        lead.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.order_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.customer_phone.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesProductType =
+        productTypeFilter === "all" || lead.product_type === productTypeFilter;
+
+      const matchesStatus = statusFilter === "all" || lead.status === statusFilter;
+
+      return matchesSearch && matchesProductType && matchesStatus;
+    });
+  }, [leads, searchTerm, productTypeFilter, statusFilter]);
+
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setProductTypeFilter("all");
+    setStatusFilter("all");
+  };
+
   const activeLead = activeId ? leads.find((l) => l.id === activeId) : null;
 
   return (
     <DashboardLayout>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-3xl font-bold">Sales Pipeline</h2>
+        <div>
+          <h2 className="text-3xl font-bold">Sales Pipeline</h2>
+          <p className="text-muted-foreground">
+            Manage and track your leads through the sales process
+          </p>
+        </div>
         <Button onClick={() => setIsCreateDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           New Lead
         </Button>
       </div>
+
+      <SearchFilters
+        onSearchChange={setSearchTerm}
+        onProductTypeChange={setProductTypeFilter}
+        onStatusChange={setStatusFilter}
+        onClearFilters={handleClearFilters}
+        totalLeads={leads.length}
+        filteredCount={filteredLeads.length}
+      />
 
       <DndContext
         collisionDetection={closestCorners}
@@ -166,7 +210,7 @@ export default function Board() {
               key={column.id}
               id={column.id}
               title={column.title}
-              leads={leads.filter((lead) => lead.status === column.id)}
+              leads={filteredLeads.filter((lead) => lead.status === column.id)}
               onEditLead={handleEditLead}
             />
           ))}
