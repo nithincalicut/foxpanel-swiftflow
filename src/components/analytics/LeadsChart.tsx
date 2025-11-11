@@ -2,24 +2,40 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 
 interface LeadsChartProps {
-  stageData: { name: string; value: number; color: string }[];
-  productData: { name: string; revenue: number }[];
+  data: Array<{ name: string; value: number; revenue?: number }>;
+  title: string;
+  type: "bar" | "pie";
+  dataKey?: string;
 }
 
-const COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--accent))", "hsl(var(--muted))"];
+const COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--accent))", "#8884d8", "#82ca9d", "#ffc658", "#ff7c7c"];
 
-export function LeadsChart({ stageData, productData }: LeadsChartProps) {
+export function LeadsChart({ data, title, type, dataKey = "value" }: LeadsChartProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle>Leads by Stage</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={300}>
+          {type === "bar" ? (
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis dataKey="name" className="text-xs" />
+              <YAxis className="text-xs" />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "var(--radius)"
+                }}
+              />
+              <Bar dataKey={dataKey} fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          ) : (
             <PieChart>
               <Pie
-                data={stageData}
+                data={data}
                 cx="50%"
                 cy="50%"
                 labelLine={false}
@@ -28,32 +44,22 @@ export function LeadsChart({ stageData, productData }: LeadsChartProps) {
                 fill="#8884d8"
                 dataKey="value"
               >
-                {stageData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "var(--radius)"
+                }}
+              />
+              <Legend />
             </PieChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Revenue by Product Type</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={productData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="revenue" fill="hsl(var(--primary))" />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-    </div>
+          )}
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
   );
 }

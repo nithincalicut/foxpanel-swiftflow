@@ -60,10 +60,10 @@ export default function Board() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [leadToEdit, setLeadToEdit] = useState<Lead | null>(null);
   
-  // Filter states
+  // Search and filter states
   const [searchTerm, setSearchTerm] = useState("");
-  const [productTypeFilter, setProductTypeFilter] = useState<ProductType | "all">("all");
-  const [statusFilter, setStatusFilter] = useState<LeadStatus | "all">("all");
+  const [selectedProductType, setSelectedProductType] = useState<ProductType | "all">("all");
+  const [selectedStatus, setSelectedStatus] = useState<LeadStatus | "all">("all");
 
   useEffect(() => {
     if (user) {
@@ -149,6 +149,12 @@ export default function Board() {
     setIsEditDialogOpen(true);
   };
 
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setSelectedProductType("all");
+    setSelectedStatus("all");
+  };
+
   // Filter leads based on search and filters
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
@@ -156,34 +162,24 @@ export default function Board() {
         !searchTerm ||
         lead.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.order_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.customer_phone.toLowerCase().includes(searchTerm.toLowerCase());
+        lead.customer_phone.includes(searchTerm);
 
       const matchesProductType =
-        productTypeFilter === "all" || lead.product_type === productTypeFilter;
+        selectedProductType === "all" || lead.product_type === selectedProductType;
 
-      const matchesStatus = statusFilter === "all" || lead.status === statusFilter;
+      const matchesStatus =
+        selectedStatus === "all" || lead.status === selectedStatus;
 
       return matchesSearch && matchesProductType && matchesStatus;
     });
-  }, [leads, searchTerm, productTypeFilter, statusFilter]);
-
-  const handleClearFilters = () => {
-    setSearchTerm("");
-    setProductTypeFilter("all");
-    setStatusFilter("all");
-  };
+  }, [leads, searchTerm, selectedProductType, selectedStatus]);
 
   const activeLead = activeId ? leads.find((l) => l.id === activeId) : null;
 
   return (
     <DashboardLayout>
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-3xl font-bold">Sales Pipeline</h2>
-          <p className="text-muted-foreground">
-            Manage and track your leads through the sales process
-          </p>
-        </div>
+        <h2 className="text-3xl font-bold">Sales Pipeline</h2>
         <Button onClick={() => setIsCreateDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           New Lead
@@ -191,9 +187,12 @@ export default function Board() {
       </div>
 
       <SearchFilters
+        searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        onProductTypeChange={setProductTypeFilter}
-        onStatusChange={setStatusFilter}
+        selectedProductType={selectedProductType}
+        onProductTypeChange={setSelectedProductType}
+        selectedStatus={selectedStatus}
+        onStatusChange={setSelectedStatus}
         onClearFilters={handleClearFilters}
         totalLeads={leads.length}
         filteredCount={filteredLeads.length}
