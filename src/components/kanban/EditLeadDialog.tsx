@@ -93,7 +93,6 @@ export function EditLeadDialog({
   onLeadUpdated,
   lead,
 }: EditLeadDialogProps) {
-  const { userRole } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [leadHistory, setLeadHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -514,17 +513,15 @@ export function EditLeadDialog({
                 </div>
 
                 <div className="flex gap-3 pt-2">
-                  {userRole === 'admin' && (
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      onClick={() => setShowDeleteDialog(true)}
-                      className="mr-auto"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </Button>
-                  )}
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="mr-auto"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
                   <Button
                     type="button"
                     variant="outline"
