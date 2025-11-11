@@ -70,6 +70,8 @@ export function DeleteAllLeadsDialog({
           assigned_to: lead.assigned_to,
           created_by: lead.created_by,
           notes: lead.notes,
+          payment_type: lead.payment_type,
+          delivery_method: lead.delivery_method,
           created_at: lead.created_at,
           updated_at: lead.updated_at,
         },

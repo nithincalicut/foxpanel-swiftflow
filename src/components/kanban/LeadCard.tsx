@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Phone, Mail, Package, Edit, ShoppingCart } from "lucide-react";
+import { Phone, Mail, Package, Edit, ShoppingCart, Truck, Store, CreditCard, Banknote } from "lucide-react";
 
 interface LeadCardProps {
   lead: Lead;
@@ -135,6 +135,29 @@ export function LeadCard({ lead, isDragging = false, onEdit, isSelected = false,
             <span>
               AED {lead.lead_items.reduce((sum, item) => sum + (parseFloat(item.price_aed as any) || 0) * item.quantity, 0).toFixed(2)}
             </span>
+          </div>
+        )}
+
+        {lead.payment_type && (
+          <div className="flex items-center gap-1.5 text-xs mt-2">
+            <CreditCard className="h-3 w-3 text-muted-foreground" />
+            <Badge variant="secondary" className="text-xs">
+              {lead.payment_type === 'full_payment' ? 'Full Payment' : 
+               lead.payment_type === 'partial_payment' ? '50% Payment' : 'COD'}
+            </Badge>
+          </div>
+        )}
+
+        {lead.delivery_method && (
+          <div className="flex items-center gap-1.5 text-xs mt-1">
+            {lead.delivery_method === 'courier' ? (
+              <Truck className="h-3 w-3 text-muted-foreground" />
+            ) : (
+              <Store className="h-3 w-3 text-muted-foreground" />
+            )}
+            <Badge variant="outline" className="text-xs">
+              {lead.delivery_method === 'courier' ? 'Courier Delivery' : 'Store Collection'}
+            </Badge>
           </div>
         )}
         

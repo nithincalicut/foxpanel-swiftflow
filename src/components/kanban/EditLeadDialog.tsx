@@ -62,6 +62,8 @@ const formSchema = z.object({
   customer_address: z.string().min(1, "Address is required"),
   notes: z.string().optional(),
   items: z.array(itemSchema).min(1, "At least one item is required"),
+  payment_type: z.enum(["full_payment", "partial_payment", "cod"]).optional(),
+  delivery_method: z.enum(["courier", "store_collection"]).optional(),
 });
 
 const sizeOptions = {
@@ -107,6 +109,8 @@ export function EditLeadDialog({
       customer_phone: "",
       customer_address: "",
       notes: "",
+      payment_type: undefined,
+      delivery_method: undefined,
       items: [
         {
           product_type: "fp_pro",
@@ -145,6 +149,8 @@ export function EditLeadDialog({
         customer_phone: lead.customer_phone || "",
         customer_address: lead.customer_address || "",
         notes: lead.notes || "",
+        payment_type: lead.payment_type || undefined,
+        delivery_method: lead.delivery_method || undefined,
         items: items.length > 0 ? items : [
           {
             product_type: "fp_pro",
@@ -195,6 +201,8 @@ export function EditLeadDialog({
           customer_phone: values.customer_phone,
           customer_address: values.customer_address,
           notes: values.notes || null,
+          payment_type: values.payment_type || null,
+          delivery_method: values.delivery_method || null,
         })
         .eq("id", lead.id);
 
@@ -284,6 +292,8 @@ export function EditLeadDialog({
             assigned_to: lead.assigned_to,
             created_by: lead.created_by,
             notes: lead.notes,
+            payment_type: lead.payment_type,
+            delivery_method: lead.delivery_method,
             created_at: lead.created_at,
             updated_at: lead.updated_at,
           },
@@ -393,6 +403,55 @@ export function EditLeadDialog({
                     </FormItem>
                   )}
                 />
+
+                {(lead?.status === 'payment_done' || lead?.status === 'production' || lead?.status === 'delivered') && (
+                  <div className="grid grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/50">
+                    <FormField
+                      control={form.control}
+                      name="payment_type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Payment Type</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select payment type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="full_payment">Full Payment</SelectItem>
+                              <SelectItem value="partial_payment">50% Payment</SelectItem>
+                              <SelectItem value="cod">COD</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="delivery_method"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Delivery Method</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select delivery method" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="courier">Courier Delivery</SelectItem>
+                              <SelectItem value="store_collection">Store Collection</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">

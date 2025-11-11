@@ -171,10 +171,12 @@ export type Database = {
           customer_email: string | null
           customer_name: string
           customer_phone: string
+          delivery_method: Database["public"]["Enums"]["delivery_method"] | null
           id: string
           last_status_change: string
           notes: string | null
           order_id: string
+          payment_type: Database["public"]["Enums"]["payment_type"] | null
           status: Database["public"]["Enums"]["lead_status"]
           updated_at: string
         }
@@ -186,10 +188,14 @@ export type Database = {
           customer_email?: string | null
           customer_name: string
           customer_phone: string
+          delivery_method?:
+            | Database["public"]["Enums"]["delivery_method"]
+            | null
           id?: string
           last_status_change?: string
           notes?: string | null
           order_id: string
+          payment_type?: Database["public"]["Enums"]["payment_type"] | null
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
         }
@@ -201,10 +207,14 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string
           customer_phone?: string
+          delivery_method?:
+            | Database["public"]["Enums"]["delivery_method"]
+            | null
           id?: string
           last_status_change?: string
           notes?: string | null
           order_id?: string
+          payment_type?: Database["public"]["Enums"]["payment_type"] | null
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
         }
@@ -300,6 +310,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "sales_staff"
+      delivery_method: "courier" | "store_collection"
       lead_status:
         | "leads"
         | "photos_received"
@@ -308,6 +319,7 @@ export type Database = {
         | "payment_done"
         | "production"
         | "delivered"
+      payment_type: "full_payment" | "partial_payment" | "cod"
       product_type: "fp_pro" | "fw" | "ft"
     }
     CompositeTypes: {
@@ -437,6 +449,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "sales_staff"],
+      delivery_method: ["courier", "store_collection"],
       lead_status: [
         "leads",
         "photos_received",
@@ -446,6 +459,7 @@ export const Constants = {
         "production",
         "delivered",
       ],
+      payment_type: ["full_payment", "partial_payment", "cod"],
       product_type: ["fp_pro", "fw", "ft"],
     },
   },

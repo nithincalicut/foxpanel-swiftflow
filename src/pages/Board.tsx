@@ -37,6 +37,9 @@ export interface LeadItem {
   updated_at: string;
 }
 
+export type PaymentType = "full_payment" | "partial_payment" | "cod";
+export type DeliveryMethod = "courier" | "store_collection";
+
 export interface Lead {
   id: string;
   order_id: string;
@@ -51,6 +54,8 @@ export interface Lead {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  payment_type: PaymentType | null;
+  delivery_method: DeliveryMethod | null;
   lead_items?: LeadItem[];
 }
 
