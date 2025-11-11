@@ -12,7 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, Settings, User } from "lucide-react";
+import { LogOut, Settings, User, LayoutDashboard, Users, Home } from "lucide-react";
+import { AppNavLink } from "@/components/AppNavLink";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -45,8 +46,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-6">
               <h1 className="text-2xl font-bold text-primary">FoxPanel CRM</h1>
+              
+              <nav className="hidden md:flex items-center gap-2">
+                <AppNavLink to="/" icon={Home}>Dashboard</AppNavLink>
+                <AppNavLink to="/board" icon={LayoutDashboard}>Board</AppNavLink>
+                {userRole === "admin" && (
+                  <AppNavLink to="/users" icon={Users}>Users</AppNavLink>
+                )}
+              </nav>
             </div>
 
             <div className="flex items-center gap-3">
