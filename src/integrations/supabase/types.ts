@@ -50,6 +50,36 @@ export type Database = {
         }
         Relationships: []
       }
+      deleted_leads: {
+        Row: {
+          deleted_at: string
+          deleted_by: string
+          id: string
+          lead_data: Json
+          lead_id: string
+          lead_items: Json
+          restore_deadline: string
+        }
+        Insert: {
+          deleted_at?: string
+          deleted_by: string
+          id?: string
+          lead_data: Json
+          lead_id: string
+          lead_items: Json
+          restore_deadline?: string
+        }
+        Update: {
+          deleted_at?: string
+          deleted_by?: string
+          id?: string
+          lead_data?: Json
+          lead_id?: string
+          lead_items?: Json
+          restore_deadline?: string
+        }
+        Relationships: []
+      }
       lead_history: {
         Row: {
           changed_at: string
@@ -204,6 +234,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          preferences: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          preferences?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          preferences?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -230,6 +284,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_deleted_leads: { Args: never; Returns: undefined }
       generate_order_id: {
         Args: { p_product_type: Database["public"]["Enums"]["product_type"] }
         Returns: string

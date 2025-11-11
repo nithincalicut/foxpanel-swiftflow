@@ -3,13 +3,14 @@ import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCorners }
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { KanbanColumn } from "@/components/kanban/KanbanColumn";
+import { ResizableKanbanColumn } from "@/components/kanban/ResizableKanbanColumn";
 import { LeadCard } from "@/components/kanban/LeadCard";
 import { CreateLeadDialog } from "@/components/kanban/CreateLeadDialog";
 import { EditLeadDialog } from "@/components/kanban/EditLeadDialog";
+import { RestoreLeadsDialog } from "@/components/kanban/RestoreLeadsDialog";
 import { SearchFilters } from "@/components/kanban/SearchFilters";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 export type LeadStatus = 
@@ -62,11 +63,12 @@ const columns: { id: LeadStatus; title: string }[] = [
 ];
 
 export default function Board() {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false);
   const [leadToEdit, setLeadToEdit] = useState<Lead | null>(null);
   
   // Search and filter states
@@ -74,12 +76,53 @@ export default function Board() {
   const [selectedProductType, setSelectedProductType] = useState<ProductType | "all">("all");
   const [selectedStatus, setSelectedStatus] = useState<LeadStatus | "all">("all");
 
+  // Column width and view states
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
+  const [minimizedColumns, setMinimizedColumns] = useState<Set<string>>(new Set());
+  const [maximizedColumn, setMaximizedColumn] = useState<string | null>(null);
+
   useEffect(() => {
     if (user) {
       fetchLeads();
       subscribeToLeads();
+      loadUserPreferences();
     }
   }, [user]);
+
+  const loadUserPreferences = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("user_preferences")
+      .select("preferences")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!error && data?.preferences) {
+      const prefs = data.preferences as any;
+      if (prefs.columnWidths) {
+        setColumnWidths(prefs.columnWidths);
+      }
+    } else {
+      // Set default widths
+      const defaultWidths: Record<string, number> = {};
+      columns.forEach(col => {
+        defaultWidths[col.id] = 320;
+      });
+      setColumnWidths(defaultWidths);
+    }
+  };
+
+  const saveUserPreferences = async (widths: Record<string, number>) => {
+    if (!user) return;
+
+    await supabase
+      .from("user_preferences")
+      .upsert({
+        user_id: user.id,
+        preferences: { columnWidths: widths },
+      });
+  };
 
   const fetchLeads = async () => {
     const { data, error } = await supabase
@@ -181,6 +224,37 @@ export default function Board() {
     setSelectedStatus("all");
   };
 
+  const handleWidthChange = (id: string, width: number) => {
+    const newWidths = { ...columnWidths, [id]: width };
+    setColumnWidths(newWidths);
+    saveUserPreferences(newWidths);
+  };
+
+  const handleMinimize = (id: string) => {
+    if (maximizedColumn === id) {
+      setMaximizedColumn(null);
+    }
+    setMinimizedColumns(prev => new Set(prev).add(id));
+  };
+
+  const handleMaximize = (id: string) => {
+    setMinimizedColumns(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(id);
+      return newSet;
+    });
+    setMaximizedColumn(id);
+  };
+
+  const handleNormalView = (id: string) => {
+    setMinimizedColumns(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(id);
+      return newSet;
+    });
+    setMaximizedColumn(null);
+  };
+
   // Filter leads based on search and filters
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
@@ -207,10 +281,18 @@ export default function Board() {
     <DashboardLayout>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-3xl font-bold">Sales Pipeline</h2>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Lead
-        </Button>
+        <div className="flex gap-2">
+          {userRole === "admin" && (
+            <Button variant="outline" onClick={() => setIsRestoreDialogOpen(true)}>
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Restore Leads
+            </Button>
+          )}
+          <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Lead
+          </Button>
+        </div>
       </div>
 
       <SearchFilters
@@ -230,14 +312,20 @@ export default function Board() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4 overflow-x-auto pb-4">
+        <div className="flex gap-4 overflow-x-auto pb-4">
           {columns.map((column) => (
-            <KanbanColumn
+            <ResizableKanbanColumn
               key={column.id}
               id={column.id}
               title={column.title}
               leads={filteredLeads.filter((lead) => lead.status === column.id)}
               onEditLead={handleEditLead}
+              width={columnWidths[column.id] || 320}
+              onWidthChange={handleWidthChange}
+              onMinimize={() => handleMinimize(column.id)}
+              onMaximize={() => handleNormalView(column.id)}
+              isMinimized={minimizedColumns.has(column.id)}
+              isMaximized={maximizedColumn === column.id}
             />
           ))}
         </div>
@@ -258,6 +346,12 @@ export default function Board() {
         onOpenChange={setIsEditDialogOpen}
         onLeadUpdated={fetchLeads}
         lead={leadToEdit}
+      />
+
+      <RestoreLeadsDialog
+        open={isRestoreDialogOpen}
+        onOpenChange={setIsRestoreDialogOpen}
+        onLeadRestored={fetchLeads}
       />
     </DashboardLayout>
   );

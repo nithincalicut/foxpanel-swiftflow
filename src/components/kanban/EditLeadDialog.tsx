@@ -93,6 +93,7 @@ export function EditLeadDialog({
   onLeadUpdated,
   lead,
 }: EditLeadDialogProps) {
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [leadHistory, setLeadHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -268,14 +269,39 @@ export function EditLeadDialog({
     if (!lead?.id) return;
     
     try {
-      const { error } = await supabase
+      // Soft delete: Move to deleted_leads table
+      const { error: insertError } = await supabase
+        .from("deleted_leads")
+        .insert({
+          lead_id: lead.id,
+          lead_data: {
+            order_id: lead.order_id,
+            customer_name: lead.customer_name,
+            customer_email: lead.customer_email,
+            customer_phone: lead.customer_phone,
+            customer_address: lead.customer_address,
+            status: lead.status,
+            assigned_to: lead.assigned_to,
+            created_by: lead.created_by,
+            notes: lead.notes,
+            created_at: lead.created_at,
+            updated_at: lead.updated_at,
+          },
+          lead_items: lead.lead_items || [],
+          deleted_by: user?.id,
+        });
+
+      if (insertError) throw insertError;
+
+      // Now delete from leads table
+      const { error: deleteError } = await supabase
         .from("leads")
         .delete()
         .eq("id", lead.id);
 
-      if (error) throw error;
+      if (deleteError) throw deleteError;
 
-      toast.success("Lead deleted successfully");
+      toast.success("Lead deleted (can be restored within 30 days)");
       setShowDeleteDialog(false);
       onOpenChange(false);
       onLeadUpdated();
