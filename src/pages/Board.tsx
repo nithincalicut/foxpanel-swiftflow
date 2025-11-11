@@ -23,6 +23,17 @@ export type LeadStatus =
 
 export type ProductType = "fp_pro" | "fw" | "ft";
 
+export interface LeadItem {
+  id: string;
+  lead_id: string;
+  product_type: ProductType;
+  size: string;
+  quantity: number;
+  price_aed: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Lead {
   id: string;
   order_id: string;
@@ -30,9 +41,6 @@ export interface Lead {
   customer_email: string | null;
   customer_phone: string;
   customer_address: string | null;
-  product_type: ProductType;
-  size: string;
-  price_aed: number | null;
   status: LeadStatus;
   assigned_to: string | null;
   created_by: string;
@@ -40,6 +48,7 @@ export interface Lead {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  lead_items?: LeadItem[];
 }
 
 const columns: { id: LeadStatus; title: string }[] = [
@@ -75,7 +84,10 @@ export default function Board() {
   const fetchLeads = async () => {
     const { data, error } = await supabase
       .from("leads")
-      .select("*")
+      .select(`
+        *,
+        lead_items (*)
+      `)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -179,7 +191,8 @@ export default function Board() {
         lead.customer_phone.includes(searchTerm);
 
       const matchesProductType =
-        selectedProductType === "all" || lead.product_type === selectedProductType;
+        selectedProductType === "all" || 
+        (lead.lead_items && lead.lead_items.some(item => item.product_type === selectedProductType));
 
       const matchesStatus =
         selectedStatus === "all" || lead.status === selectedStatus;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,22 +27,30 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+
+const itemSchema = z.object({
+  id: z.string().optional(),
+  product_type: z.enum(["fp_pro", "fw", "ft"]),
+  size: z.string().min(1, "Size is required"),
+  custom_size: z.string().optional(),
+  quantity: z.string().min(1, "Quantity is required"),
+  price_aed: z.string().min(1, "Price is required"),
+});
 
 const formSchema = z.object({
   customer_name: z.string().min(1, "Name is required"),
   customer_email: z.string().email("Invalid email").optional().or(z.literal("")),
   customer_phone: z.string().min(10, "Phone number is required"),
   customer_address: z.string().min(1, "Address is required"),
-  product_type: z.enum(["fp_pro", "fw", "ft"]),
-  size: z.string().min(1, "Size is required"),
-  custom_size: z.string().optional(),
-  price_aed: z.string().min(1, "Price is required"),
   notes: z.string().optional(),
+  items: z.array(itemSchema).min(1, "At least one item is required"),
 });
 
 const sizeOptions = {
@@ -85,32 +93,54 @@ export function EditLeadDialog({
       customer_email: "",
       customer_phone: "",
       customer_address: "",
-      product_type: "fp_pro",
-      size: "",
-      custom_size: "",
-      price_aed: "",
       notes: "",
+      items: [
+        {
+          product_type: "fp_pro",
+          size: "",
+          custom_size: "",
+          quantity: "1",
+          price_aed: "",
+        },
+      ],
     },
   });
 
-  const selectedProductType = form.watch("product_type");
-  const selectedSize = form.watch("size");
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "items",
+  });
 
   useEffect(() => {
     if (lead && open) {
-      // Check if size is a custom size
-      const isCustom = !sizeOptions[lead.product_type as keyof typeof sizeOptions].includes(lead.size);
-      
+      const items = lead.lead_items?.map((item: any) => {
+        const isCustom = !sizeOptions[item.product_type as keyof typeof sizeOptions].includes(item.size);
+        
+        return {
+          id: item.id,
+          product_type: item.product_type,
+          size: isCustom ? "Custom Size" : item.size,
+          custom_size: isCustom ? item.size : "",
+          quantity: item.quantity.toString(),
+          price_aed: item.price_aed?.toString() || "",
+        };
+      }) || [];
+
       form.reset({
         customer_name: lead.customer_name || "",
         customer_email: lead.customer_email || "",
         customer_phone: lead.customer_phone || "",
         customer_address: lead.customer_address || "",
-        product_type: lead.product_type,
-        size: isCustom ? "Custom Size" : lead.size,
-        custom_size: isCustom ? lead.size : "",
-        price_aed: lead.price_aed?.toString() || "",
         notes: lead.notes || "",
+        items: items.length > 0 ? items : [
+          {
+            product_type: "fp_pro",
+            size: "",
+            custom_size: "",
+            quantity: "1",
+            price_aed: "",
+          },
+        ],
       });
       
       fetchLeadHistory();
@@ -143,11 +173,6 @@ export function EditLeadDialog({
     setIsSubmitting(true);
 
     try {
-      // Determine final size value
-      const finalSize = values.size === "Custom Size" && values.custom_size 
-        ? values.custom_size 
-        : values.size;
-
       // Update lead
       const { error: updateError } = await supabase
         .from("leads")
@@ -156,14 +181,64 @@ export function EditLeadDialog({
           customer_email: values.customer_email || null,
           customer_phone: values.customer_phone,
           customer_address: values.customer_address,
-          product_type: values.product_type,
-          size: finalSize,
-          price_aed: parseFloat(values.price_aed),
           notes: values.notes || null,
         })
         .eq("id", lead.id);
 
       if (updateError) throw updateError;
+
+      // Get existing item IDs
+      const existingItemIds = values.items
+        .filter(item => item.id)
+        .map(item => item.id);
+
+      // Delete removed items
+      if (lead.lead_items) {
+        const itemsToDelete = lead.lead_items
+          .filter((item: any) => !existingItemIds.includes(item.id))
+          .map((item: any) => item.id);
+
+        if (itemsToDelete.length > 0) {
+          const { error: deleteError } = await supabase
+            .from("lead_items")
+            .delete()
+            .in("id", itemsToDelete);
+
+          if (deleteError) throw deleteError;
+        }
+      }
+
+      // Update or insert items
+      for (const item of values.items) {
+        const finalSize = item.size === "Custom Size" && item.custom_size 
+          ? item.custom_size 
+          : item.size;
+
+        const itemData = {
+          lead_id: lead.id,
+          product_type: item.product_type,
+          size: finalSize,
+          quantity: parseInt(item.quantity),
+          price_aed: parseFloat(item.price_aed),
+        };
+
+        if (item.id) {
+          // Update existing item
+          const { error: updateItemError } = await supabase
+            .from("lead_items")
+            .update(itemData)
+            .eq("id", item.id);
+
+          if (updateItemError) throw updateItemError;
+        } else {
+          // Insert new item
+          const { error: insertItemError } = await supabase
+            .from("lead_items")
+            .insert(itemData);
+
+          if (insertItemError) throw insertItemError;
+        }
+      }
 
       toast.success("Lead updated successfully");
       form.reset();
@@ -179,237 +254,293 @@ export function EditLeadDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Lead</DialogTitle>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="customer_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Customer Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="customer_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Customer Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="John Doe" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-            <FormField
-              control={form.control}
-              name="customer_phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
-                  <FormControl>
-                    <Input placeholder="+1234567890" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                  <FormField
+                    control={form.control}
+                    name="customer_phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="+1234567890" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-            <FormField
-              control={form.control}
-              name="customer_email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email (Optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="john@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <FormField
+                  control={form.control}
+                  name="customer_email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="john@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <FormField
-              control={form.control}
-              name="customer_address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Address</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Enter delivery address..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <FormField
+                  control={form.control}
+                  name="customer_address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Enter delivery address..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <FormField
-              control={form.control}
-              name="product_type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Product Type</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select product type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="fp_pro">FP-PRO</SelectItem>
-                      <SelectItem value="fw">FW</SelectItem>
-                      <SelectItem value="ft">FT</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notes (Optional)</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Additional information..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <FormField
-              control={form.control}
-              name="size"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Size</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select size" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {sizeOptions[selectedProductType].map((size) => (
-                        <SelectItem key={size} value={size}>
-                          {size}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {selectedSize === "Custom Size" && (
-              <FormField
-                control={form.control}
-                name="custom_size"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Custom Size</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter custom size (e.g., 50×60 cm)" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-
-            <FormField
-              control={form.control}
-              name="price_aed"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Price (AED)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      step="0.01" 
-                      placeholder="0.00" 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Additional information..."
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="flex gap-3 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting} className="flex-1">
-                {isSubmitting ? "Updating..." : "Update Lead"}
-              </Button>
-            </div>
-          </form>
-        </Form>
-
-        <Separator className="my-6" />
-
-        {/* Lead History Timeline */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Activity Timeline</h3>
-          {loadingHistory ? (
-            <p className="text-sm text-muted-foreground">Loading history...</p>
-          ) : leadHistory.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No activity yet</p>
-          ) : (
-            <ScrollArea className="h-[300px] pr-4">
-              <div className="space-y-4">
-                {leadHistory.map((history, index) => (
-                  <div key={history.id} className="flex gap-3">
-                    <div className="flex flex-col items-center">
-                      <div className="h-2 w-2 rounded-full bg-primary" />
-                      {index < leadHistory.length - 1 && (
-                        <div className="w-px h-full bg-border" />
-                      )}
-                    </div>
-                    <div className="flex-1 pb-4">
-                      <div className="flex items-center gap-2 mb-1">
-                        {history.old_status && (
-                          <>
-                            <Badge variant="outline" className="text-xs">
-                              {statusLabels[history.old_status] || history.old_status}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">→</span>
-                          </>
-                        )}
-                        <Badge className="text-xs">
-                          {statusLabels[history.new_status] || history.new_status}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(history.changed_at), { addSuffix: true })}
-                      </p>
-                      {history.notes && (
-                        <p className="text-sm mt-2 text-muted-foreground">{history.notes}</p>
-                      )}
-                    </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Order Items</h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        append({
+                          product_type: "fp_pro",
+                          size: "",
+                          custom_size: "",
+                          quantity: "1",
+                          price_aed: "",
+                        })
+                      }
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Item
+                    </Button>
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
-          )}
+
+                  {fields.map((field, index) => {
+                    const selectedProductType = form.watch(`items.${index}.product_type`);
+                    const selectedSize = form.watch(`items.${index}.size`);
+
+                    return (
+                      <Card key={field.id}>
+                        <CardContent className="p-4 space-y-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-medium">Item {index + 1}</h4>
+                            {fields.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => remove(index)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.product_type`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Product Type</FormLabel>
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select product" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="fp_pro">FP-PRO</SelectItem>
+                                      <SelectItem value="fw">FW</SelectItem>
+                                      <SelectItem value="ft">FT</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.size`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Size</FormLabel>
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select size" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {sizeOptions[selectedProductType].map((size) => (
+                                        <SelectItem key={size} value={size}>
+                                          {size}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+
+                          {selectedSize === "Custom Size" && (
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.custom_size`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Custom Size</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="e.g., 50×60 cm" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.quantity`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Quantity</FormLabel>
+                                  <FormControl>
+                                    <Input type="number" min="1" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.price_aed`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Price (AED)</FormLabel>
+                                  <FormControl>
+                                    <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting} className="flex-1">
+                    {isSubmitting ? "Updating..." : "Update Lead"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </div>
+
+          <div className="space-y-4">
+            <Separator className="lg:hidden" />
+            <h3 className="text-lg font-semibold">Activity Timeline</h3>
+            {loadingHistory ? (
+              <p className="text-sm text-muted-foreground">Loading history...</p>
+            ) : leadHistory.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No activity yet</p>
+            ) : (
+              <ScrollArea className="h-[500px] pr-4">
+                <div className="space-y-4">
+                  {leadHistory.map((history, index) => (
+                    <div key={history.id} className="flex gap-3">
+                      <div className="flex flex-col items-center">
+                        <div className="h-2 w-2 rounded-full bg-primary" />
+                        {index < leadHistory.length - 1 && (
+                          <div className="w-px h-full bg-border" />
+                        )}
+                      </div>
+                      <div className="flex-1 pb-4">
+                        <div className="flex items-center gap-2 mb-1">
+                          {history.old_status && (
+                            <>
+                              <Badge variant="outline" className="text-xs">
+                                {statusLabels[history.old_status] || history.old_status}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">→</span>
+                            </>
+                          )}
+                          <Badge className="text-xs">
+                            {statusLabels[history.new_status] || history.new_status}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(history.changed_at), { addSuffix: true })}
+                        </p>
+                        {history.notes && (
+                          <p className="text-sm mt-2 text-muted-foreground">{history.notes}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

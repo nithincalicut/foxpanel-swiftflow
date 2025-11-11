@@ -32,10 +32,13 @@ const Index = () => {
     try {
       setLoading(true);
       
-      // Fetch all leads
+      // Fetch all leads with items
       const { data: leadsData, error: leadsError } = await supabase
         .from("leads")
-        .select("*")
+        .select(`
+          *,
+          lead_items (*)
+        `)
         .order("created_at", { ascending: false });
 
       if (leadsError) throw leadsError;
@@ -84,9 +87,12 @@ const Index = () => {
   const totalLeads = leads.length;
   const deliveredLeads = leads.filter(l => l.status === "delivered").length;
   const conversionRate = totalLeads > 0 ? ((deliveredLeads / totalLeads) * 100).toFixed(1) : "0";
-  const totalRevenue = leads
-    .filter(l => l.price_aed && l.status !== "leads")
-    .reduce((sum, l) => sum + (Number(l.price_aed) || 0), 0);
+  const totalRevenue = leads.reduce((sum, lead) => {
+    const leadTotal = lead.lead_items?.reduce((itemSum: number, item: any) => {
+      return itemSum + ((parseFloat(item.price_aed) || 0) * item.quantity);
+    }, 0) || 0;
+    return sum + leadTotal;
+  }, 0);
   const activeLeads = leads.filter(l => l.status !== "delivered").length;
 
   // Leads by stage data
@@ -104,21 +110,30 @@ const Index = () => {
   const revenueByProduct = [
     {
       name: "FP-PRO",
-      value: leads
-        .filter(l => l.product_type === "fp_pro" && l.price_aed)
-        .reduce((sum, l) => sum + (Number(l.price_aed) || 0), 0),
+      value: leads.reduce((sum, lead) => {
+        const productRevenue = lead.lead_items
+          ?.filter((item: any) => item.product_type === "fp_pro")
+          .reduce((itemSum: number, item: any) => itemSum + ((parseFloat(item.price_aed) || 0) * item.quantity), 0) || 0;
+        return sum + productRevenue;
+      }, 0),
     },
     {
       name: "FW",
-      value: leads
-        .filter(l => l.product_type === "fw" && l.price_aed)
-        .reduce((sum, l) => sum + (Number(l.price_aed) || 0), 0),
+      value: leads.reduce((sum, lead) => {
+        const productRevenue = lead.lead_items
+          ?.filter((item: any) => item.product_type === "fw")
+          .reduce((itemSum: number, item: any) => itemSum + ((parseFloat(item.price_aed) || 0) * item.quantity), 0) || 0;
+        return sum + productRevenue;
+      }, 0),
     },
     {
       name: "FT",
-      value: leads
-        .filter(l => l.product_type === "ft" && l.price_aed)
-        .reduce((sum, l) => sum + (Number(l.price_aed) || 0), 0),
+      value: leads.reduce((sum, lead) => {
+        const productRevenue = lead.lead_items
+          ?.filter((item: any) => item.product_type === "ft")
+          .reduce((itemSum: number, item: any) => itemSum + ((parseFloat(item.price_aed) || 0) * item.quantity), 0) || 0;
+        return sum + productRevenue;
+      }, 0),
     },
   ];
 

@@ -91,6 +91,47 @@ export type Database = {
           },
         ]
       }
+      lead_items: {
+        Row: {
+          created_at: string
+          id: string
+          lead_id: string
+          price_aed: number | null
+          product_type: Database["public"]["Enums"]["product_type"]
+          quantity: number
+          size: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lead_id: string
+          price_aed?: number | null
+          product_type: Database["public"]["Enums"]["product_type"]
+          quantity?: number
+          size: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lead_id?: string
+          price_aed?: number | null
+          product_type?: Database["public"]["Enums"]["product_type"]
+          quantity?: number
+          size?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_items_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           assigned_to: string | null
@@ -104,9 +145,6 @@ export type Database = {
           last_status_change: string
           notes: string | null
           order_id: string
-          price_aed: number | null
-          product_type: Database["public"]["Enums"]["product_type"]
-          size: string
           status: Database["public"]["Enums"]["lead_status"]
           updated_at: string
         }
@@ -122,9 +160,6 @@ export type Database = {
           last_status_change?: string
           notes?: string | null
           order_id: string
-          price_aed?: number | null
-          product_type: Database["public"]["Enums"]["product_type"]
-          size: string
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
         }
@@ -140,9 +175,6 @@ export type Database = {
           last_status_change?: string
           notes?: string | null
           order_id?: string
-          price_aed?: number | null
-          product_type?: Database["public"]["Enums"]["product_type"]
-          size?: string
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
         }

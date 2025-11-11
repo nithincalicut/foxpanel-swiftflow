@@ -4,7 +4,7 @@ import { Lead } from "@/pages/Board";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Phone, Mail, Package, Edit } from "lucide-react";
+import { Phone, Mail, Package, Edit, ShoppingCart } from "lucide-react";
 
 interface LeadCardProps {
   lead: Lead;
@@ -49,9 +49,12 @@ export function LeadCard({ lead, isDragging = false, onEdit }: LeadCardProps) {
             <p className="text-xs text-muted-foreground font-mono">{lead.order_id}</p>
           </div>
           <div className="flex items-center gap-1">
-            <Badge variant="secondary" className="text-xs shrink-0">
-              {productLabels[lead.product_type]}
-            </Badge>
+            {lead.lead_items && lead.lead_items.length > 0 && (
+              <Badge variant="secondary" className="text-xs shrink-0">
+                <ShoppingCart className="h-3 w-3 mr-1" />
+                {lead.lead_items.length}
+              </Badge>
+            )}
             {onEdit && (
               <Button
                 variant="ghost"
@@ -82,14 +85,28 @@ export function LeadCard({ lead, isDragging = false, onEdit }: LeadCardProps) {
           </div>
         )}
         
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Package className="h-3 w-3 shrink-0" />
-          <span>Size: {lead.size}</span>
-        </div>
+        {lead.lead_items && lead.lead_items.length > 0 && (
+          <div className="mt-2 space-y-1">
+            {lead.lead_items.map((item, index) => (
+              <div key={item.id} className="flex items-center gap-1.5 text-xs">
+                <Package className="h-3 w-3 shrink-0 text-muted-foreground" />
+                <Badge variant="outline" className="text-xs">
+                  {productLabels[item.product_type]}
+                </Badge>
+                <span className="text-muted-foreground">{item.size}</span>
+                {item.quantity > 1 && (
+                  <span className="text-muted-foreground">×{item.quantity}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
 
-        {lead.price_aed && (
-          <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
-            <span>AED {parseFloat(lead.price_aed as any).toFixed(2)}</span>
+        {lead.lead_items && lead.lead_items.length > 0 && (
+          <div className="flex items-center gap-1.5 text-xs font-medium text-primary mt-2">
+            <span>
+              AED {lead.lead_items.reduce((sum, item) => sum + (parseFloat(item.price_aed as any) || 0) * item.quantity, 0).toFixed(2)}
+            </span>
           </div>
         )}
         

@@ -45,7 +45,10 @@ const Reports = () => {
       
       let query = supabase
         .from("leads")
-        .select("*")
+        .select(`
+          *,
+          lead_items (*)
+        `)
         .order("created_at", { ascending: false });
 
       if (startDate) {
@@ -56,9 +59,6 @@ const Reports = () => {
         endOfDay.setHours(23, 59, 59, 999);
         query = query.lte("created_at", endOfDay.toISOString());
       }
-      if (selectedProductType !== "all") {
-        query = query.eq("product_type", selectedProductType as "fp_pro" | "fw" | "ft");
-      }
       if (selectedStatus !== "all") {
         query = query.eq("status", selectedStatus as "leads" | "photos_received" | "mockup_done" | "price_shared" | "payment_done" | "production" | "delivered");
       }
@@ -66,7 +66,16 @@ const Reports = () => {
       const { data, error } = await query;
 
       if (error) throw error;
-      setLeads(data || []);
+      
+      // Filter by product type on client side
+      let filteredData = data || [];
+      if (selectedProductType !== "all") {
+        filteredData = filteredData.filter(lead => 
+          lead.lead_items?.some(item => item.product_type === selectedProductType)
+        );
+      }
+      
+      setLeads(filteredData);
     } catch (error) {
       console.error("Error fetching report data:", error);
       toast.error("Failed to load report data");
@@ -89,25 +98,54 @@ const Reports = () => {
       "Address",
       "Product Type",
       "Size",
+      "Quantity",
       "Price (AED)",
+      "Total (AED)",
       "Status",
       "Created At",
       "Last Status Change",
     ];
 
-    const csvData = leads.map(lead => [
-      lead.order_id,
-      lead.customer_name,
-      lead.customer_phone,
-      lead.customer_email || "",
-      lead.customer_address || "",
-      lead.product_type,
-      lead.size,
-      lead.price_aed || "",
-      lead.status,
-      new Date(lead.created_at).toLocaleString(),
-      new Date(lead.last_status_change).toLocaleString(),
-    ]);
+    // Flatten lead items into rows
+    const csvData: string[][] = [];
+    leads.forEach(lead => {
+      if (lead.lead_items && lead.lead_items.length > 0) {
+        lead.lead_items.forEach(item => {
+          const itemTotal = (parseFloat(item.price_aed as any) || 0) * item.quantity;
+          csvData.push([
+            lead.order_id,
+            lead.customer_name,
+            lead.customer_phone,
+            lead.customer_email || "",
+            lead.customer_address || "",
+            item.product_type,
+            item.size,
+            item.quantity.toString(),
+            (parseFloat(item.price_aed as any) || 0).toFixed(2),
+            itemTotal.toFixed(2),
+            lead.status,
+            new Date(lead.created_at).toLocaleString(),
+            new Date(lead.last_status_change).toLocaleString(),
+          ]);
+        });
+      } else {
+        csvData.push([
+          lead.order_id,
+          lead.customer_name,
+          lead.customer_phone,
+          lead.customer_email || "",
+          lead.customer_address || "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          lead.status,
+          new Date(lead.created_at).toLocaleString(),
+          new Date(lead.last_status_change).toLocaleString(),
+        ]);
+      }
+    });
 
     const csvContent = [
       headers.join(","),
@@ -136,9 +174,12 @@ const Reports = () => {
     );
   }
 
-  const totalRevenue = leads
-    .filter(l => l.price_aed)
-    .reduce((sum, l) => sum + (Number(l.price_aed) || 0), 0);
+  const totalRevenue = leads.reduce((sum, lead) => {
+    const leadTotal = lead.lead_items?.reduce((itemSum, item) => {
+      return itemSum + ((parseFloat(item.price_aed as any) || 0) * item.quantity);
+    }, 0) || 0;
+    return sum + leadTotal;
+  }, 0);
 
   const deliveredCount = leads.filter(l => l.status === "delivered").length;
   const conversionRate = leads.length > 0 
