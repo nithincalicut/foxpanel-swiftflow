@@ -8,6 +8,7 @@ import { LeadCard } from "@/components/kanban/LeadCard";
 import { CreateLeadDialog } from "@/components/kanban/CreateLeadDialog";
 import { EditLeadDialog } from "@/components/kanban/EditLeadDialog";
 import { RestoreLeadsDialog } from "@/components/kanban/RestoreLeadsDialog";
+import { DeleteAllLeadsDialog } from "@/components/kanban/DeleteAllLeadsDialog";
 import { SearchFilters } from "@/components/kanban/SearchFilters";
 import { Button } from "@/components/ui/button";
 import { Plus, RotateCcw } from "lucide-react";
@@ -283,6 +284,10 @@ export default function Board() {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-3xl font-bold">Sales Pipeline</h2>
         <div className="flex gap-2">
+          <DeleteAllLeadsDialog
+            onLeadsDeleted={fetchLeads}
+            totalLeads={leads.length}
+          />
           {userRole === "admin" && (
             <Button variant="outline" onClick={() => setIsRestoreDialogOpen(true)}>
               <RotateCcw className="mr-2 h-4 w-4" />
