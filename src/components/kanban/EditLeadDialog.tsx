@@ -62,7 +62,7 @@ const createFormSchema = (status?: string) => {
     customer_name: z.string().min(1, "Name is required"),
     customer_email: z.string().email("Invalid email").optional().or(z.literal("")),
     customer_phone: z.string().min(10, "Phone number is required"),
-    customer_address: z.string().min(1, "Address is required"),
+    customer_address: z.string().optional(),
     notes: z.string().optional(),
     items: z.array(itemSchema).min(1, "At least one item is required"),
     payment_type: needsPaymentInfo 
@@ -395,7 +395,7 @@ export function EditLeadDialog({
                   name="customer_address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Address</FormLabel>
+                      <FormLabel>Address (Optional)</FormLabel>
                       <FormControl>
                         <Textarea placeholder="Enter delivery address..." {...field} />
                       </FormControl>
