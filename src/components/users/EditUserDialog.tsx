@@ -31,7 +31,7 @@ import { toast } from "sonner";
 const formSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
-  role: z.enum(["admin", "sales_staff"]),
+  role: z.enum(["admin", "sales_staff", "production_manager"]),
 });
 
 interface EditUserDialogProps {
@@ -68,7 +68,7 @@ export function EditUserDialog({
       form.reset({
         first_name: user.first_name || "",
         last_name: user.last_name || "",
-        role: user.role as "admin" | "sales_staff",
+        role: user.role as "admin" | "sales_staff" | "production_manager",
       });
     }
   }, [user, form]);
@@ -158,6 +158,7 @@ export function EditUserDialog({
                     <SelectContent>
                       <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="sales_staff">Sales Staff</SelectItem>
+                      <SelectItem value="production_manager">Production Manager</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

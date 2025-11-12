@@ -77,6 +77,7 @@ const createFormSchema = (status?: string) => {
       : z.enum(["courier", "store_collection"]).optional(),
     tracking_number: z.string().optional(),
     tracking_status: z.enum(["pending_pickup", "in_transit", "out_for_delivery", "delivered", "failed"]).optional(),
+    packing_date: z.string().optional(),
   });
 };
 
@@ -111,7 +112,7 @@ export function EditLeadDialog({
   onLeadUpdated,
   lead,
 }: EditLeadDialogProps) {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [leadHistory, setLeadHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -129,6 +130,7 @@ export function EditLeadDialog({
       delivery_method: undefined,
       tracking_number: "",
       tracking_status: undefined,
+      packing_date: "",
       items: [
         {
           product_type: "fp_pro",
@@ -171,6 +173,7 @@ export function EditLeadDialog({
         delivery_method: lead.delivery_method || undefined,
         tracking_number: lead.tracking_number || "",
         tracking_status: lead.tracking_status || undefined,
+        packing_date: lead.packing_date || "",
         items: items.length > 0 ? items : [
           {
             product_type: "fp_pro",
@@ -225,6 +228,7 @@ export function EditLeadDialog({
           delivery_method: values.delivery_method || null,
           tracking_number: values.tracking_number || null,
           tracking_status: values.tracking_status || null,
+          packing_date: values.packing_date || null,
           tracking_updated_at: values.tracking_number || values.tracking_status ? new Date().toISOString() : null,
         })
         .eq("id", lead.id);
@@ -427,8 +431,11 @@ export function EditLeadDialog({
                   )}
                 />
 
-                {(lead?.status === 'payment_done' || lead?.status === 'production' || lead?.status === 'delivered') && (
+                {/* Payment & Delivery Information - SALES TEAM & ADMIN ONLY */}
+                {(userRole === 'sales_staff' || userRole === 'admin') && 
+                 (lead?.status === 'payment_done' || lead?.status === 'production' || lead?.status === 'delivered') && (
                   <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-primary">Payment & Delivery Information</h3>
                     <div className="grid grid-cols-2 gap-4 p-4 border-2 border-primary/20 rounded-lg bg-primary/5">
                       <FormField
                         control={form.control}
@@ -475,20 +482,29 @@ export function EditLeadDialog({
                         )}
                       />
                     </div>
+                  </div>
+                )}
 
-                    {form.watch('delivery_method') === 'courier' && (
-                      <div className="grid grid-cols-2 gap-4 p-4 border-2 border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-950/30">
+                {/* Courier Tracking Information - PRODUCTION TEAM & ADMIN ONLY */}
+                {(userRole === 'production_manager' || userRole === 'admin') && 
+                 form.watch('delivery_method') === 'courier' && 
+                 (lead?.status === 'production' || lead?.status === 'delivered') && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-green-700 dark:text-green-300">
+                      Production & Shipping Details
+                    </h3>
+                    <div className="grid grid-cols-3 gap-4 p-4 border-2 border-green-200 dark:border-green-800 rounded-lg bg-green-50 dark:bg-green-950/30">
                         <FormField
                           control={form.control}
                           name="tracking_number"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-blue-700 dark:text-blue-300 font-semibold">Tracking Number</FormLabel>
+                              <FormLabel className="text-green-700 dark:text-green-300 font-semibold">Tracking Number</FormLabel>
                               <FormControl>
                                 <Input 
                                   placeholder="Enter tracking number..." 
                                   {...field} 
-                                  className="border-blue-300 dark:border-blue-700"
+                                  className="border-green-300 dark:border-green-700"
                                 />
                               </FormControl>
                               <FormMessage />
@@ -501,10 +517,10 @@ export function EditLeadDialog({
                           name="tracking_status"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-blue-700 dark:text-blue-300 font-semibold">Tracking Status</FormLabel>
+                              <FormLabel className="text-green-700 dark:text-green-300 font-semibold">Tracking Status</FormLabel>
                               <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
-                                  <SelectTrigger className="border-blue-300 dark:border-blue-700">
+                                  <SelectTrigger className="border-green-300 dark:border-green-700">
                                     <SelectValue placeholder="Select status..." />
                                   </SelectTrigger>
                                 </FormControl>
@@ -520,11 +536,31 @@ export function EditLeadDialog({
                             </FormItem>
                           )}
                         />
-                      </div>
-                    )}
-                  </div>
-                )}
 
+                        <FormField
+                          control={form.control}
+                          name="packing_date"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-green-700 dark:text-green-300 font-semibold">
+                                Packing Date
+                              </FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="date"
+                                  {...field} 
+                                  className="border-green-300 dark:border-green-700"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                {/* Order Items */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold">Order Items</h3>

@@ -60,6 +60,7 @@ export interface Lead {
   tracking_number: string | null;
   tracking_status: string | null;
   tracking_updated_at: string | null;
+  packing_date: string | null;
   lead_items?: LeadItem[];
 }
 
@@ -72,6 +73,16 @@ const columns: { id: LeadStatus; title: string }[] = [
   { id: "production", title: "Production" },
   { id: "delivered", title: "Delivered" },
 ];
+
+const statusLabels: Record<LeadStatus, string> = {
+  leads: "Leads",
+  photos_received: "Photos Received",
+  mockup_done: "Mockup Done",
+  price_shared: "Price Shared",
+  payment_done: "Payment Done",
+  production: "Production",
+  delivered: "Delivered",
+};
 
 export default function Board() {
   const { user, userRole } = useAuth();
@@ -96,6 +107,14 @@ export default function Board() {
   // Bulk selection states
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
+
+  // Filter columns based on user role
+  const visibleColumns = useMemo(() => {
+    if (userRole === 'production_manager') {
+      return columns.filter(col => col.id === 'production' || col.id === 'delivered');
+    }
+    return columns;
+  }, [userRole]);
 
   useEffect(() => {
     if (user) {
@@ -207,6 +226,16 @@ export default function Board() {
 
     const lead = leads.find((l) => l.id === leadId);
     if (!lead || lead.status === newStatus) return;
+
+    // Add helpful toast for production managers moving leads backward
+    if (userRole === 'production_manager' && 
+        lead.status === 'production' && 
+        newStatus !== 'production' && 
+        newStatus !== 'delivered') {
+      toast.info("Lead sent back to sales team for corrections", {
+        description: `Moved from Production to ${statusLabels[newStatus]}`
+      });
+    }
 
     // Validate payment info when moving to production or delivered
     if ((newStatus === 'production' || newStatus === 'delivered') && !lead.payment_type) {
@@ -346,20 +375,24 @@ export default function Board() {
             <CheckSquare className="mr-2 h-4 w-4" />
             {selectionMode ? "Exit Selection" : "Select Leads"}
           </Button>
-          <DeleteAllLeadsDialog
-            onLeadsDeleted={fetchLeads}
-            totalLeads={leads.length}
-          />
+          {userRole === "admin" && (
+            <DeleteAllLeadsDialog
+              onLeadsDeleted={fetchLeads}
+              totalLeads={leads.length}
+            />
+          )}
           {userRole === "admin" && (
             <Button variant="outline" onClick={() => setIsRestoreDialogOpen(true)}>
               <RotateCcw className="mr-2 h-4 w-4" />
               Restore Leads
             </Button>
           )}
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            New Lead
-          </Button>
+          {userRole !== 'production_manager' && (
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Lead
+            </Button>
+          )}
         </div>
       </div>
 
@@ -384,7 +417,7 @@ export default function Board() {
         onDragEnd={handleDragEnd}
       >
         <div className="flex gap-4 overflow-x-auto pb-4">
-          {columns.map((column) => (
+          {visibleColumns.map((column) => (
             <ResizableKanbanColumn
               key={column.id}
               id={column.id}

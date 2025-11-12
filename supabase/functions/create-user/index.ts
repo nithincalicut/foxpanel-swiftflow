@@ -11,7 +11,7 @@ interface CreateUserRequest {
   password: string;
   first_name: string;
   last_name: string;
-  role: 'admin' | 'sales_staff';
+  role: 'admin' | 'sales_staff' | 'production_manager';
 }
 
 serve(async (req) => {
@@ -87,6 +87,12 @@ serve(async (req) => {
     // Validate input
     if (!email || !password || !first_name || !last_name || !role) {
       throw new Error('Missing required fields');
+    }
+
+    // Validate role
+    const validRoles = ['admin', 'sales_staff', 'production_manager'];
+    if (!validRoles.includes(role)) {
+      throw new Error('Invalid role. Must be admin, sales_staff, or production_manager');
     }
 
     // Check for duplicate email
