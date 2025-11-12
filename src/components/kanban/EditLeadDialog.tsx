@@ -515,31 +515,6 @@ export function EditLeadDialog({
 
                         <FormField
                           control={form.control}
-                          name="tracking_status"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-green-700 dark:text-green-300 font-semibold">Tracking Status</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                  <SelectTrigger className="border-green-300 dark:border-green-700">
-                                    <SelectValue placeholder="Select status..." />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="pending_pickup">Pending Pickup</SelectItem>
-                                  <SelectItem value="in_transit">In Transit</SelectItem>
-                                  <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
-                                  <SelectItem value="delivered">Delivered</SelectItem>
-                                  <SelectItem value="failed">Failed Delivery</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
                           name="packing_date"
                           render={({ field }) => (
                             <FormItem>
