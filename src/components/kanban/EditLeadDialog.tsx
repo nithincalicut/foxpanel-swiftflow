@@ -559,7 +559,6 @@ export function EditLeadDialog({
                       </div>
                     </div>
                   )}
-                )}
 
                 {/* Order Items */}
                 <div className="space-y-3">
