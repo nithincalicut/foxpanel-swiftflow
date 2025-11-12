@@ -173,6 +173,7 @@ export function EditLeadDialog({
         delivery_method: lead.delivery_method || undefined,
         tracking_number: lead.tracking_number || "",
         tracking_status: lead.tracking_status || undefined,
+        packing_date: lead.packing_date || "",
         items: items.length > 0 ? items : [
           {
             product_type: "fp_pro",
