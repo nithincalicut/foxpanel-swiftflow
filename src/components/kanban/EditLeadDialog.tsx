@@ -134,7 +134,6 @@ export function EditLeadDialog({
       payment_type: undefined,
       delivery_method: undefined,
       tracking_number: "",
-      tracking_status: undefined,
       packing_date: "",
       items: [
         {
@@ -177,7 +176,6 @@ export function EditLeadDialog({
         payment_type: lead.payment_type || undefined,
         delivery_method: lead.delivery_method || undefined,
         tracking_number: lead.tracking_number || "",
-        tracking_status: lead.tracking_status || undefined,
         packing_date: lead.packing_date || "",
         items: items.length > 0 ? items : [
           {
@@ -232,9 +230,7 @@ export function EditLeadDialog({
           payment_type: values.payment_type || null,
           delivery_method: values.delivery_method || null,
           tracking_number: values.tracking_number || null,
-          tracking_status: values.tracking_status || null,
           packing_date: values.packing_date || null,
-          tracking_updated_at: values.tracking_number || values.tracking_status ? new Date().toISOString() : null,
         })
         .eq("id", lead.id);
 
