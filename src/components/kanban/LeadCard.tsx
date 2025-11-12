@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Phone, Mail, Package, Edit, ShoppingCart, Truck, Store, CreditCard, Banknote, AlertTriangle } from "lucide-react";
+import { Phone, Mail, Package, Edit, ShoppingCart, Truck, Store, CreditCard, Banknote, AlertTriangle, MapPin } from "lucide-react";
 
 interface LeadCardProps {
   lead: Lead;
@@ -175,6 +175,40 @@ export function LeadCard({ lead, isDragging = false, onEdit, isSelected = false,
                 )}
                 <Badge variant="outline" className="text-xs font-semibold border-primary/30 text-primary">
                   {lead.delivery_method === 'courier' ? 'Courier' : 'Store Collection'}
+                </Badge>
+              </div>
+            )}
+          </div>
+        )}
+
+        {lead.delivery_method === 'courier' && (lead.tracking_number || lead.tracking_status) && (
+          <div className="mt-2 p-2 rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 space-y-1.5">
+            {lead.tracking_number && (
+              <div className="flex items-center gap-1.5 text-xs">
+                <MapPin className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                <span className="font-mono font-semibold text-blue-700 dark:text-blue-300">
+                  {lead.tracking_number}
+                </span>
+              </div>
+            )}
+            
+            {lead.tracking_status && (
+              <div className="flex items-center gap-1.5 text-xs">
+                <Badge 
+                  variant={lead.tracking_status === 'delivered' ? 'default' : 'secondary'}
+                  className={`text-xs font-semibold ${
+                    lead.tracking_status === 'delivered' 
+                      ? 'bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700'
+                      : lead.tracking_status === 'failed'
+                      ? 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700'
+                      : 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700'
+                  }`}
+                >
+                  {lead.tracking_status === 'pending_pickup' && 'Pending Pickup'}
+                  {lead.tracking_status === 'in_transit' && 'In Transit'}
+                  {lead.tracking_status === 'out_for_delivery' && 'Out for Delivery'}
+                  {lead.tracking_status === 'delivered' && '✓ Delivered'}
+                  {lead.tracking_status === 'failed' && 'Failed Delivery'}
                 </Badge>
               </div>
             )}

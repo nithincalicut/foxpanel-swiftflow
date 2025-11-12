@@ -39,6 +39,7 @@ export interface LeadItem {
 
 export type PaymentType = "full_payment" | "partial_payment" | "cod";
 export type DeliveryMethod = "courier" | "store_collection";
+export type TrackingStatus = "pending_pickup" | "in_transit" | "out_for_delivery" | "delivered" | "failed";
 
 export interface Lead {
   id: string;
@@ -56,6 +57,9 @@ export interface Lead {
   updated_at: string;
   payment_type: PaymentType | null;
   delivery_method: DeliveryMethod | null;
+  tracking_number: string | null;
+  tracking_status: string | null;
+  tracking_updated_at: string | null;
   lead_items?: LeadItem[];
 }
 

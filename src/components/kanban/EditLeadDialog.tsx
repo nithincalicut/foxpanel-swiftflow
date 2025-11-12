@@ -75,6 +75,8 @@ const createFormSchema = (status?: string) => {
           required_error: "Delivery method is required for this stage"
         })
       : z.enum(["courier", "store_collection"]).optional(),
+    tracking_number: z.string().optional(),
+    tracking_status: z.enum(["pending_pickup", "in_transit", "out_for_delivery", "delivered", "failed"]).optional(),
   });
 };
 
@@ -125,6 +127,8 @@ export function EditLeadDialog({
       notes: "",
       payment_type: undefined,
       delivery_method: undefined,
+      tracking_number: "",
+      tracking_status: undefined,
       items: [
         {
           product_type: "fp_pro",
@@ -165,6 +169,8 @@ export function EditLeadDialog({
         notes: lead.notes || "",
         payment_type: lead.payment_type || undefined,
         delivery_method: lead.delivery_method || undefined,
+        tracking_number: lead.tracking_number || "",
+        tracking_status: lead.tracking_status || undefined,
         items: items.length > 0 ? items : [
           {
             product_type: "fp_pro",
@@ -217,6 +223,9 @@ export function EditLeadDialog({
           notes: values.notes || null,
           payment_type: values.payment_type || null,
           delivery_method: values.delivery_method || null,
+          tracking_number: values.tracking_number || null,
+          tracking_status: values.tracking_status || null,
+          tracking_updated_at: values.tracking_number || values.tracking_status ? new Date().toISOString() : null,
         })
         .eq("id", lead.id);
 
@@ -419,51 +428,100 @@ export function EditLeadDialog({
                 />
 
                 {(lead?.status === 'payment_done' || lead?.status === 'production' || lead?.status === 'delivered') && (
-                  <div className="grid grid-cols-2 gap-4 p-4 border-2 border-primary/20 rounded-lg bg-primary/5">
-                    <FormField
-                      control={form.control}
-                      name="payment_type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-primary font-semibold">Payment Type *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="border-primary/30">
-                                <SelectValue placeholder="Select payment type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="full_payment">Full Payment</SelectItem>
-                              <SelectItem value="partial_payment">50% Payment</SelectItem>
-                              <SelectItem value="cod">COD</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4 p-4 border-2 border-primary/20 rounded-lg bg-primary/5">
+                      <FormField
+                        control={form.control}
+                        name="payment_type"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-primary font-semibold">Payment Type *</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="border-primary/30">
+                                  <SelectValue placeholder="Select payment type" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="full_payment">Full Payment</SelectItem>
+                                <SelectItem value="partial_payment">50% Payment</SelectItem>
+                                <SelectItem value="cod">COD</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name="delivery_method"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-primary font-semibold">Delivery Method *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="border-primary/30">
-                                <SelectValue placeholder="Select delivery method" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="courier">Courier Delivery</SelectItem>
-                              <SelectItem value="store_collection">Store Collection</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      <FormField
+                        control={form.control}
+                        name="delivery_method"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-primary font-semibold">Delivery Method *</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="border-primary/30">
+                                  <SelectValue placeholder="Select delivery method" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="courier">Courier Delivery</SelectItem>
+                                <SelectItem value="store_collection">Store Collection</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {form.watch('delivery_method') === 'courier' && (
+                      <div className="grid grid-cols-2 gap-4 p-4 border-2 border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-950/30">
+                        <FormField
+                          control={form.control}
+                          name="tracking_number"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-blue-700 dark:text-blue-300 font-semibold">Tracking Number</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="Enter tracking number..." 
+                                  {...field} 
+                                  className="border-blue-300 dark:border-blue-700"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="tracking_status"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-blue-700 dark:text-blue-300 font-semibold">Tracking Status</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger className="border-blue-300 dark:border-blue-700">
+                                    <SelectValue placeholder="Select status..." />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="pending_pickup">Pending Pickup</SelectItem>
+                                  <SelectItem value="in_transit">In Transit</SelectItem>
+                                  <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
+                                  <SelectItem value="delivered">Delivered</SelectItem>
+                                  <SelectItem value="failed">Failed Delivery</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
 
