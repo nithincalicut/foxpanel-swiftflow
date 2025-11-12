@@ -60,7 +60,7 @@ export interface Lead {
   tracking_number: string | null;
   tracking_status: string | null;
   tracking_updated_at: string | null;
-  packing_date: string | null;
+  packing_date?: string | null;
   lead_items?: LeadItem[];
 }
 
