@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { MetricCard } from "@/components/analytics/MetricCard";
 import { LeadsChart } from "@/components/analytics/LeadsChart";
 import { RecentActivity } from "@/components/analytics/RecentActivity";
+import { PaymentAnalytics } from "@/components/analytics/PaymentAnalytics";
 import { TrendingUp, DollarSign, Users, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -192,6 +193,11 @@ const Index = () => {
             />
           )}
         </div>
+
+        {/* Payment Analytics - Admin Only */}
+        {userRole === 'admin' && (
+          <PaymentAnalytics leads={leads} activities={activities} />
+        )}
 
         {/* Recent Activity */}
         <RecentActivity activities={activities} />
