@@ -58,8 +58,6 @@ export interface Lead {
   payment_type: PaymentType | null;
   delivery_method: DeliveryMethod | null;
   tracking_number: string | null;
-  tracking_status: string | null;
-  tracking_updated_at: string | null;
   packing_date?: string | null;
   lead_items?: LeadItem[];
 }

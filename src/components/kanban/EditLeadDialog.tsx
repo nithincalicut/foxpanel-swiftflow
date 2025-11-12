@@ -55,8 +55,10 @@ const itemSchema = z.object({
   price_aed: z.string().min(1, "Price is required"),
 });
 
-const createFormSchema = (status?: string) => {
+const createFormSchema = (status?: string, userRole?: string) => {
   const needsPaymentInfo = status === 'payment_done' || status === 'production' || status === 'delivered';
+  const isProduction = status === 'production' || status === 'delivered';
+  const isProductionManager = userRole === 'production_manager';
   
   return z.object({
     customer_name: z.string().min(1, "Name is required"),
@@ -75,9 +77,12 @@ const createFormSchema = (status?: string) => {
           required_error: "Delivery method is required for this stage"
         })
       : z.enum(["courier", "store_collection"]).optional(),
-    tracking_number: z.string().optional(),
-    tracking_status: z.enum(["pending_pickup", "in_transit", "out_for_delivery", "delivered", "failed"]).optional(),
-    packing_date: z.string().optional(),
+    tracking_number: (isProduction && isProductionManager)
+      ? z.string().min(1, "Tracking number is required for production")
+      : z.string().optional(),
+    packing_date: (isProduction && isProductionManager)
+      ? z.string().min(1, "Packing date is required for production")
+      : z.string().optional(),
   });
 };
 
@@ -119,7 +124,7 @@ export function EditLeadDialog({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const form = useForm<FormSchema>({
-    resolver: zodResolver(createFormSchema(lead?.status)),
+    resolver: zodResolver(createFormSchema(lead?.status, userRole)),
     defaultValues: {
       customer_name: "",
       customer_email: "",
@@ -129,7 +134,6 @@ export function EditLeadDialog({
       payment_type: undefined,
       delivery_method: undefined,
       tracking_number: "",
-      tracking_status: undefined,
       packing_date: "",
       items: [
         {
@@ -172,7 +176,6 @@ export function EditLeadDialog({
         payment_type: lead.payment_type || undefined,
         delivery_method: lead.delivery_method || undefined,
         tracking_number: lead.tracking_number || "",
-        tracking_status: lead.tracking_status || undefined,
         packing_date: lead.packing_date || "",
         items: items.length > 0 ? items : [
           {
@@ -227,9 +230,7 @@ export function EditLeadDialog({
           payment_type: values.payment_type || null,
           delivery_method: values.delivery_method || null,
           tracking_number: values.tracking_number || null,
-          tracking_status: values.tracking_status || null,
           packing_date: values.packing_date || null,
-          tracking_updated_at: values.tracking_number || values.tracking_status ? new Date().toISOString() : null,
         })
         .eq("id", lead.id);
 
@@ -507,31 +508,6 @@ export function EditLeadDialog({
                                   className="border-green-300 dark:border-green-700"
                                 />
                               </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="tracking_status"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-green-700 dark:text-green-300 font-semibold">Tracking Status</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                  <SelectTrigger className="border-green-300 dark:border-green-700">
-                                    <SelectValue placeholder="Select status..." />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="pending_pickup">Pending Pickup</SelectItem>
-                                  <SelectItem value="in_transit">In Transit</SelectItem>
-                                  <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
-                                  <SelectItem value="delivered">Delivered</SelectItem>
-                                  <SelectItem value="failed">Failed Delivery</SelectItem>
-                                </SelectContent>
-                              </Select>
                               <FormMessage />
                             </FormItem>
                           )}
