@@ -89,6 +89,12 @@ serve(async (req) => {
       throw new Error('Missing required fields');
     }
 
+    // Validate role
+    const validRoles = ['admin', 'sales_staff', 'production_manager'];
+    if (!validRoles.includes(role)) {
+      throw new Error('Invalid role. Must be admin, sales_staff, or production_manager');
+    }
+
     // Check for duplicate email
     const { data: existingUser, error: checkError } = await supabaseAdmin.auth.admin.listUsers();
     

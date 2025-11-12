@@ -10,7 +10,7 @@ interface UpdateUserRequest {
   user_id: string;
   first_name?: string;
   last_name?: string;
-  role?: 'admin' | 'sales_staff';
+  role?: 'admin' | 'sales_staff' | 'production_manager';
 }
 
 serve(async (req) => {
