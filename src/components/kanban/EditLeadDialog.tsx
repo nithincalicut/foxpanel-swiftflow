@@ -130,6 +130,7 @@ export function EditLeadDialog({
       delivery_method: undefined,
       tracking_number: "",
       tracking_status: undefined,
+      packing_date: "",
       items: [
         {
           product_type: "fp_pro",
