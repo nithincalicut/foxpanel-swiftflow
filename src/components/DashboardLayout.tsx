@@ -38,6 +38,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const getRoleBadge = () => {
     if (userRole === "admin") return "Admin";
     if (userRole === "sales_staff") return "Sales";
+    if (userRole === "production_manager") return "Production";
     return "User";
   };
 

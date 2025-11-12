@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Phone, Mail, Package, Edit, ShoppingCart, Truck, Store, CreditCard, Banknote, AlertTriangle, MapPin } from "lucide-react";
+import { Phone, Mail, Package, Edit, ShoppingCart, Truck, Store, CreditCard, Banknote, AlertTriangle, MapPin, Calendar } from "lucide-react";
+import { format } from "date-fns";
 
 interface LeadCardProps {
   lead: Lead;
@@ -212,6 +213,17 @@ export function LeadCard({ lead, isDragging = false, onEdit, isSelected = false,
                 </Badge>
               </div>
             )}
+          </div>
+        )}
+
+        {lead.packing_date && (
+          <div className="mt-2 p-2 rounded-md bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800">
+            <div className="flex items-center gap-1.5 text-xs">
+              <Calendar className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+              <span className="font-semibold text-purple-700 dark:text-purple-300">
+                Packed: {format(new Date(lead.packing_date), 'MMM dd, yyyy')}
+              </span>
+            </div>
           </div>
         )}
         
