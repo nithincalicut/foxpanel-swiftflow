@@ -55,8 +55,10 @@ const itemSchema = z.object({
   price_aed: z.string().min(1, "Price is required"),
 });
 
-const createFormSchema = (status?: string) => {
+const createFormSchema = (status?: string, userRole?: string) => {
   const needsPaymentInfo = status === 'payment_done' || status === 'production' || status === 'delivered';
+  const isProduction = status === 'production' || status === 'delivered';
+  const isProductionManager = userRole === 'production_manager';
   
   return z.object({
     customer_name: z.string().min(1, "Name is required"),
@@ -75,9 +77,12 @@ const createFormSchema = (status?: string) => {
           required_error: "Delivery method is required for this stage"
         })
       : z.enum(["courier", "store_collection"]).optional(),
-    tracking_number: z.string().optional(),
-    tracking_status: z.enum(["pending_pickup", "in_transit", "out_for_delivery", "delivered", "failed"]).optional(),
-    packing_date: z.string().optional(),
+    tracking_number: (isProduction && isProductionManager)
+      ? z.string().min(1, "Tracking number is required for production")
+      : z.string().optional(),
+    packing_date: (isProduction && isProductionManager)
+      ? z.string().min(1, "Packing date is required for production")
+      : z.string().optional(),
   });
 };
 
@@ -119,7 +124,7 @@ export function EditLeadDialog({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const form = useForm<FormSchema>({
-    resolver: zodResolver(createFormSchema(lead?.status)),
+    resolver: zodResolver(createFormSchema(lead?.status, userRole)),
     defaultValues: {
       customer_name: "",
       customer_email: "",

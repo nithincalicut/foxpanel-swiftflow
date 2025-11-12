@@ -176,11 +176,10 @@ export type Database = {
           last_status_change: string
           notes: string | null
           order_id: string
+          packing_date: string | null
           payment_type: Database["public"]["Enums"]["payment_type"] | null
           status: Database["public"]["Enums"]["lead_status"]
           tracking_number: string | null
-          tracking_status: string | null
-          tracking_updated_at: string | null
           updated_at: string
         }
         Insert: {
@@ -198,11 +197,10 @@ export type Database = {
           last_status_change?: string
           notes?: string | null
           order_id: string
+          packing_date?: string | null
           payment_type?: Database["public"]["Enums"]["payment_type"] | null
           status?: Database["public"]["Enums"]["lead_status"]
           tracking_number?: string | null
-          tracking_status?: string | null
-          tracking_updated_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -220,11 +218,10 @@ export type Database = {
           last_status_change?: string
           notes?: string | null
           order_id?: string
+          packing_date?: string | null
           payment_type?: Database["public"]["Enums"]["payment_type"] | null
           status?: Database["public"]["Enums"]["lead_status"]
           tracking_number?: string | null
-          tracking_status?: string | null
-          tracking_updated_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -318,7 +315,7 @@ export type Database = {
       seed_admin_user: { Args: never; Returns: undefined }
     }
     Enums: {
-      app_role: "admin" | "sales_staff"
+      app_role: "admin" | "sales_staff" | "production_manager"
       delivery_method: "courier" | "store_collection"
       lead_status:
         | "leads"
@@ -457,7 +454,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "sales_staff"],
+      app_role: ["admin", "sales_staff", "production_manager"],
       delivery_method: ["courier", "store_collection"],
       lead_status: [
         "leads",
