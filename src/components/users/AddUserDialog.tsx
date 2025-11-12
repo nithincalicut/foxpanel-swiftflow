@@ -33,7 +33,7 @@ const formSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
-  role: z.enum(["admin", "sales_staff"]),
+  role: z.enum(["admin", "sales_staff", "production_manager"]),
 });
 
 interface AddUserDialogProps {
@@ -180,6 +180,7 @@ export function AddUserDialog({
                     <SelectContent>
                       <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="sales_staff">Sales Staff</SelectItem>
+                      <SelectItem value="production_manager">Production Manager</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
