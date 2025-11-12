@@ -77,6 +77,7 @@ const createFormSchema = (status?: string) => {
       : z.enum(["courier", "store_collection"]).optional(),
     tracking_number: z.string().optional(),
     tracking_status: z.enum(["pending_pickup", "in_transit", "out_for_delivery", "delivered", "failed"]).optional(),
+    packing_date: z.string().optional(),
   });
 };
 
@@ -111,7 +112,7 @@ export function EditLeadDialog({
   onLeadUpdated,
   lead,
 }: EditLeadDialogProps) {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [leadHistory, setLeadHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
