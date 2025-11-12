@@ -88,6 +88,14 @@ serve(async (req) => {
       throw new Error('Missing user_id');
     }
 
+    // Validate role if provided
+    if (role) {
+      const validRoles = ['admin', 'sales_staff', 'production_manager'];
+      if (!validRoles.includes(role)) {
+        throw new Error('Invalid role. Must be admin, sales_staff, or production_manager');
+      }
+    }
+
     // Update profile if name fields are provided
     if (first_name !== undefined || last_name !== undefined) {
       const updateData: any = {};
